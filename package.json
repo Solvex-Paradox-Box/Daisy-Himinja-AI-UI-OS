@@ -1,0 +1,21 @@
+{
+  "name": "daisy-haminja-ai-ui-os",
+  "version": "1.0.0",
+  "description": "Sovereign Operating System and Logic Engine client interface built on Android Jetpack Compose and Gemini AI",
+  "private": true,
+  "scripts": {
+    "build": "gradle assembleDebug",
+    "compile": "gradle compileDebugSources",
+    "test": "gradle :app:testDebugUnitTest",
+    "verify-screenshots": "gradle :app:verifyRoborazziDebug",
+    "record-screenshots": "gradle :app:recordRoborazziDebug",
+    "clean": "gradle clean"
+  },
+  "dependencies": {},
+  "devDependencies": {},
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "author": "whatarethetoddz@gmail.com",
+  "license": "UNLICENSED"
+}
