@@ -63,6 +63,13 @@ class SovereignViewModel(application: Application) : AndroidViewModel(applicatio
     private val _experienceSummary = MutableStateFlow("Active partner profile loaded. Identified deep focus coordinates & architectural intent. System learning coefficient synced at 1.0.")
     val experienceSummary: StateFlow<String> = _experienceSummary.asStateFlow()
 
+    // --- Real-Time Telemetry & Throughput Flows (Sparklines) ---
+    private val _efficiencyHistory = MutableStateFlow<List<Float>>(List(15) { 94f + (it % 4) * 1.2f })
+    val efficiencyHistory: StateFlow<List<Float>> = _efficiencyHistory.asStateFlow()
+
+    private val _throughputHistory = MutableStateFlow<List<Float>>(List(15) { 180f + (it % 5) * 45f })
+    val throughputHistory: StateFlow<List<Float>> = _throughputHistory.asStateFlow()
+
     init {
         val database = SovereignDatabase.getDatabase(application)
         val dao = database.sovereignDao()
@@ -88,6 +95,31 @@ class SovereignViewModel(application: Application) : AndroidViewModel(applicatio
 
         // Seed initial data if the database is completely empty
         seedInitialData()
+
+        // Real-time telemetry simulation loop
+        viewModelScope.launch {
+            while (true) {
+                delay(1200)
+                // update efficiency history
+                val currentEffList = _efficiencyHistory.value.toMutableList()
+                val isBusy = _isProcessing.value || _isBiometricScanning.value
+                val baseEff = if (isBusy) 97.2f else 93.5f
+                val fluctuation = (Math.random() * 2.5).toFloat()
+                val nextEff = (baseEff + fluctuation).coerceAtMost(99.9f)
+                currentEffList.add(nextEff)
+                if (currentEffList.size > 20) currentEffList.removeAt(0)
+                _efficiencyHistory.value = currentEffList
+
+                // update throughput history
+                val currentThroughputList = _throughputHistory.value.toMutableList()
+                val baseThroughput = if (isBusy) 390f else 210f
+                val thrFluctuation = (Math.random() * 70 - 35).toFloat()
+                val nextThr = (baseThroughput + thrFluctuation).coerceAtLeast(100f)
+                currentThroughputList.add(nextThr)
+                if (currentThroughputList.size > 20) currentThroughputList.removeAt(0)
+                _throughputHistory.value = currentThroughputList
+            }
+        }
     }
 
     private fun seedInitialData() {

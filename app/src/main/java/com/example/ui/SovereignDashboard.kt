@@ -43,6 +43,12 @@ import com.example.R
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.draw.shadow
 import com.example.data.model.SovereignSolution
 import com.example.data.model.SystemMilestone
 import com.example.data.model.TetherBubble
@@ -72,6 +78,11 @@ fun SovereignDashboard(
     val biometricConfidence by viewModel.biometricConfidence.collectAsStateWithLifecycle()
     val contributionScore by viewModel.contributionScore.collectAsStateWithLifecycle()
     val experienceSummary by viewModel.experienceSummary.collectAsStateWithLifecycle()
+
+    val efficiencyHistory by viewModel.efficiencyHistory.collectAsStateWithLifecycle()
+    val throughputHistory by viewModel.throughputHistory.collectAsStateWithLifecycle()
+
+    var showSidebar by remember { mutableStateOf(false) }
 
     // Screen tab selection state
     var selectedTab by remember { mutableStateOf(0) }
@@ -136,6 +147,18 @@ fun SovereignDashboard(
                                     )
                                 )
                             }
+                        }
+                    },
+                    actions = {
+                        IconButton(
+                            onClick = { showSidebar = true },
+                            modifier = Modifier.testTag("open_metrics_sidebar")
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Build,
+                                contentDescription = "Open Computing Metrics",
+                                tint = neonCyan
+                            )
                         }
                     },
                     colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
@@ -703,6 +726,27 @@ fun SovereignDashboard(
 
                     Spacer(modifier = Modifier.height(20.dp))
 
+                    Text(
+                        text = "TETHER-BUBBLE STATE-MEMORY FIELD",
+                        style = TextStyle(
+                            fontFamily = FontFamily.Monospace,
+                            fontWeight = FontWeight.Bold,
+                            color = textMuted,
+                            fontSize = 11.sp,
+                            letterSpacing = 1.sp
+                        ),
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = TextAlign.Start
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    TetherBubbleNetworkGraph(
+                        bubbles = tetherBubbles,
+                        onToggleSelect = { viewModel.toggleBubbleSelection(it) }
+                    )
+
+                    Spacer(modifier = Modifier.height(20.dp))
+
                     // Active Bubbles Field Grid
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -1034,6 +1078,186 @@ fun SovereignDashboard(
                         }
                     }
                 }
+            }
+        }
+    }
+
+    // OVERLAY SIDEBAR COMPONENT (D3.js dynamic metrics visualization)
+    if (showSidebar) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.5f))
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null
+                ) {
+                    showSidebar = false
+                }
+        )
+    }
+
+    AnimatedVisibility(
+        visible = showSidebar,
+        enter = fadeIn() + slideInHorizontally(initialOffsetX = { it }),
+        exit = fadeOut() + slideOutHorizontally(targetOffsetX = { it }),
+        modifier = Modifier.fillMaxHeight().width(320.dp).align(Alignment.CenterEnd)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxHeight()
+                .width(320.dp)
+                .background(Color(0xFA040406))
+                .border(BorderStroke(1.dp, darkBorder))
+                .padding(16.dp)
+        ) {
+            Column(
+                modifier = Modifier.fillMaxSize()
+            ) {
+                // Header row
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.Build,
+                            contentDescription = "Metrics Icon",
+                            tint = neonCyan,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            "D3.JS METRICS PANEL",
+                            style = TextStyle(
+                                fontFamily = FontFamily.Monospace,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White,
+                                fontSize = 11.sp,
+                                letterSpacing = 1.sp
+                            )
+                        )
+                    }
+                    IconButton(
+                        onClick = { showSidebar = false },
+                        modifier = Modifier.testTag("close_metrics_sidebar")
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "Close Sidebar",
+                            tint = Color.White,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+                Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(darkBorder))
+                Spacer(modifier = Modifier.height(12.dp))
+
+                LazyColumn(
+                    modifier = Modifier.fillMaxWidth().weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(20.dp)
+                ) {
+                    item {
+                        Text(
+                            "COMPUTING EFFICIENCY",
+                            style = TextStyle(
+                                fontFamily = FontFamily.Monospace,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 10.sp,
+                                color = neonCyan,
+                                letterSpacing = 0.5.sp
+                            )
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            "Real-time solver coefficient for local matrix synthesis operations and paradox calculations.",
+                            style = TextStyle(
+                                fontFamily = FontFamily.Monospace,
+                                fontSize = 8.sp,
+                                color = textMuted,
+                                lineHeight = 11.sp
+                            )
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        SparklineChart(
+                            data = efficiencyHistory,
+                            color = neonCyan,
+                            unit = "%"
+                        )
+                    }
+
+                    item {
+                        Text(
+                            "STATE-MEMORY THROUGHPUT",
+                            style = TextStyle(
+                                fontFamily = FontFamily.Monospace,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 10.sp,
+                                color = orangeAccent,
+                                letterSpacing = 0.5.sp
+                            )
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            "Data write speed to local Room DB caches and binary memory buffers.",
+                            style = TextStyle(
+                                fontFamily = FontFamily.Monospace,
+                                fontSize = 8.sp,
+                                color = textMuted,
+                                lineHeight = 11.sp
+                            )
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        SparklineChart(
+                            data = throughputHistory,
+                            color = orangeAccent,
+                            unit = "MB/s"
+                        )
+                    }
+
+                    item {
+                        // High-tech D3 simulation active tracker
+                        Card(
+                            shape = RoundedCornerShape(8.dp),
+                            colors = CardDefaults.cardColors(containerColor = Color(0xFF0B0B0F)),
+                            border = BorderStroke(0.5.dp, darkBorder),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(modifier = Modifier.padding(10.dp)) {
+                                Text(
+                                    "D3 INTEGRITY LOG",
+                                    fontFamily = FontFamily.Monospace,
+                                    fontSize = 8.5.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = neonGreen
+                                )
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text(
+                                    "• Gravity coefficient: 0.01\n• Node charge: -200\n• Tension: 0.04 (Spring)\n• Active threads: 1\n• Direct-hardware speed: 5.4GHz",
+                                    fontFamily = FontFamily.Monospace,
+                                    fontSize = 8.sp,
+                                    color = Color.LightGray,
+                                    lineHeight = 12.sp
+                                )
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+                
+                // Footer branding
+                Text(
+                    "Sovereign hAMINJA System Telemetry",
+                    fontFamily = FontFamily.Monospace,
+                    fontSize = 8.sp,
+                    color = textMuted,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
         }
     }
@@ -1884,3 +2108,555 @@ fun RoboticPointingHand(
         }
     }
 }
+
+data class GraphNode(
+    val id: Long,
+    val text: String,
+    val isCore: Boolean = false,
+    val isSelected: Boolean = false,
+    val bubbleRef: TetherBubble? = null
+)
+
+@Composable
+fun TetherBubbleNetworkGraph(
+    bubbles: List<TetherBubble>,
+    onToggleSelect: (TetherBubble) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val localCyan = Color(0xFF0AE7FF)
+    val localGreen = Color(0xFF10FA70)
+    val localOrange = Color(0xFFFFB000)
+    val localMuted = Color(0xFF888899)
+    val localBorder = Color(0xFF1C1C24)
+
+    val nodes = remember(bubbles) {
+        val list = mutableListOf<GraphNode>()
+        list.add(GraphNode(id = -1L, text = "dAIsy Core", isCore = true))
+        bubbles.forEach { b ->
+            list.add(GraphNode(id = b.id, text = b.text, isCore = false, isSelected = b.isSelected, bubbleRef = b))
+        }
+        list
+    }
+
+    val nodePositions = remember { mutableStateMapOf<Long, Offset>() }
+    val nodeVelocities = remember { mutableMapOf<Long, Offset>() }
+    var draggedNodeId by remember { mutableStateOf<Long?>(null) }
+
+    var canvasWidth by remember { mutableStateOf(800f) }
+    var canvasHeight by remember { mutableStateOf(600f) }
+
+    val density = LocalDensity.current.density
+
+    LaunchedEffect(nodes, canvasWidth, canvasHeight) {
+        val centerX = canvasWidth / 2f
+        val centerY = canvasHeight / 2f
+
+        if (!nodePositions.containsKey(-1L)) {
+            nodePositions[-1L] = Offset(centerX, centerY)
+            nodeVelocities[-1L] = Offset.Zero
+        }
+
+        nodes.forEach { node ->
+            if (!nodePositions.containsKey(node.id)) {
+                if (node.isCore) {
+                    nodePositions[node.id] = Offset(centerX, centerY)
+                } else {
+                    val angle = (node.id * 1.5).toFloat()
+                    val radius = 180f + (node.id % 3) * 35f
+                    val x = centerX + radius * kotlin.math.cos(angle)
+                    val y = centerY + radius * kotlin.math.sin(angle)
+                    nodePositions[node.id] = Offset(x, y)
+                }
+                nodeVelocities[node.id] = Offset.Zero
+            }
+        }
+
+        val activeIds = nodes.map { it.id }.toSet()
+        val keysToRemove = nodePositions.keys.filter { !activeIds.contains(it) }
+        keysToRemove.forEach {
+            nodePositions.remove(it)
+            nodeVelocities.remove(it)
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        val damping = 0.82f
+        val springLength = 160f
+        val springTension = 0.04f
+        val repulsionForce = 40000f
+        val gravityTension = 0.01f
+
+        while (true) {
+            val centerX = canvasWidth / 2f
+            val centerY = canvasHeight / 2f
+
+            val forces = mutableMapOf<Long, Offset>()
+            nodePositions.keys.forEach { id ->
+                forces[id] = Offset.Zero
+            }
+
+            nodePositions.forEach { (id, pos) ->
+                val dx = centerX - pos.x
+                val dy = centerY - pos.y
+                forces[id] = forces[id]!! + Offset(dx * gravityTension, dy * gravityTension)
+            }
+
+            val corePos = nodePositions[-1L]
+            if (corePos != null) {
+                nodePositions.forEach { (id, pos) ->
+                    if (id != -1L) {
+                        val dx = pos.x - corePos.x
+                        val dy = pos.y - corePos.y
+                        val dist = kotlin.math.sqrt(dx * dx + dy * dy).coerceAtLeast(1f)
+                        
+                        val forceMagnitude = -springTension * (dist - springLength)
+                        val fx = (dx / dist) * forceMagnitude
+                        val fy = (dy / dist) * forceMagnitude
+                        
+                        forces[id] = forces[id]!! + Offset(fx, fy)
+                        forces[-1L] = forces[-1L]!! - Offset(fx * 0.15f, fy * 0.15f)
+                    }
+                }
+            }
+
+            val keys = nodePositions.keys.toList()
+            for (i in 0 until keys.size) {
+                for (j in i + 1 until keys.size) {
+                    val id1 = keys[i]
+                    val id2 = keys[j]
+                    val pos1 = nodePositions[id1] ?: continue
+                    val pos2 = nodePositions[id2] ?: continue
+
+                    val dx = pos1.x - pos2.x
+                    val dy = pos1.y - pos2.y
+                    val distSq = (dx * dx + dy * dy).coerceAtLeast(100f)
+                    val dist = kotlin.math.sqrt(distSq)
+
+                    val forceMagnitude = repulsionForce / distSq
+                    val fx = (dx / dist) * forceMagnitude
+                    val fy = (dy / dist) * forceMagnitude
+
+                    forces[id1] = forces[id1]!! + Offset(fx, fy)
+                    forces[id2] = forces[id2]!! - Offset(fx, fy)
+                }
+            }
+
+            nodePositions.forEach { (id, pos) ->
+                if (id == draggedNodeId) {
+                    nodeVelocities[id] = Offset.Zero
+                    return@forEach
+                }
+
+                val f = forces[id] ?: Offset.Zero
+                val v = (nodeVelocities[id] ?: Offset.Zero) + f
+                val dampedV = Offset(v.x * damping, v.y * damping)
+                nodeVelocities[id] = dampedV
+
+                var newX = pos.x + dampedV.x
+                var newY = pos.y + dampedV.y
+
+                val padding = 45f
+                newX = newX.coerceIn(padding, canvasWidth - padding)
+                newY = newY.coerceIn(padding, canvasHeight - padding)
+
+                nodePositions[id] = Offset(newX, newY)
+            }
+
+            if (draggedNodeId != -1L) {
+                val currentCorePos = nodePositions[-1L]
+                if (currentCorePos != null) {
+                    val dx = centerX - currentCorePos.x
+                    val dy = centerY - currentCorePos.y
+                    nodePositions[-1L] = Offset(
+                        currentCorePos.x + dx * 0.1f,
+                        currentCorePos.y + dy * 0.1f
+                    )
+                }
+            }
+
+            kotlinx.coroutines.delay(16)
+        }
+    }
+
+    val infiniteTransition = rememberInfiniteTransition(label = "pulse")
+    val pulseProgress by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2200, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "link_pulse"
+    )
+
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(340.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .background(Color(0xFF040406))
+            .border(1.dp, localBorder, RoundedCornerShape(16.dp))
+            .pointerInput(nodes) {
+                detectDragGestures(
+                    onDragStart = { pointerOffset ->
+                        val touchRadiusPx = 50.dp.toPx()
+                        val hitNode = nodePositions.entries.minByOrNull { entry ->
+                            val dx = entry.value.x - pointerOffset.x
+                            val dy = entry.value.y - pointerOffset.y
+                            dx * dx + dy * dy
+                        }
+
+                        if (hitNode != null) {
+                            val distSq = {
+                                val dx = hitNode.value.x - pointerOffset.x
+                                val dy = hitNode.value.y - pointerOffset.y
+                                dx * dx + dy * dy
+                            }()
+                            if (distSq < touchRadiusPx * touchRadiusPx) {
+                                draggedNodeId = hitNode.key
+                            }
+                        }
+                    },
+                    onDrag = { change, dragAmount ->
+                        change.consume()
+                        val currentId = draggedNodeId
+                        if (currentId != null) {
+                            val currentPos = nodePositions[currentId] ?: Offset.Zero
+                            nodePositions[currentId] = Offset(
+                                (currentPos.x + dragAmount.x).coerceIn(40f, canvasWidth - 40f),
+                                (currentPos.y + dragAmount.y).coerceIn(40f, canvasHeight - 40f)
+                            )
+                        }
+                    },
+                    onDragEnd = {
+                        draggedNodeId = null
+                    },
+                    onDragCancel = {
+                        draggedNodeId = null
+                    }
+                )
+            }
+            .onSizeChanged { size ->
+                canvasWidth = size.width.toFloat()
+                canvasHeight = size.height.toFloat()
+            }
+    ) {
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val corePos = nodePositions[-1L]
+            if (corePos != null) {
+                nodePositions.forEach { (id, pos) ->
+                    if (id != -1L) {
+                        val nodeObj = nodes.find { it.id == id } ?: return@forEach
+                        val color = if (nodeObj.isSelected) localOrange else localCyan
+                        
+                        val strokeWidth = if (nodeObj.isSelected) 2.dp.toPx() else 1.2.dp.toPx()
+                        drawLine(
+                            color = color.copy(alpha = if (nodeObj.isSelected) 0.5f else 0.25f),
+                            start = corePos,
+                            end = pos,
+                            strokeWidth = strokeWidth
+                        )
+
+                        val px = corePos.x + (pos.x - corePos.x) * pulseProgress
+                        val py = corePos.y + (pos.y - corePos.y) * pulseProgress
+                        drawCircle(
+                            color = color,
+                            radius = if (nodeObj.isSelected) 4.dp.toPx() else 2.5.dp.toPx(),
+                            center = Offset(px, py)
+                        )
+                    }
+                }
+            }
+        }
+
+        nodePositions.forEach { (id, pos) ->
+            val nodeObj = nodes.find { it.id == id } ?: return@forEach
+
+            val xDp = (pos.x / density).dp - if (nodeObj.isCore) 35.dp else 45.dp
+            val yDp = (pos.y / density).dp - if (nodeObj.isCore) 35.dp else 25.dp
+
+            Box(
+                modifier = Modifier
+                    .offset(x = xDp, y = yDp)
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null
+                    ) {
+                        if (!nodeObj.isCore && nodeObj.bubbleRef != null) {
+                            onToggleSelect(nodeObj.bubbleRef)
+                        }
+                    }
+            ) {
+                if (nodeObj.isCore) {
+                    Box(
+                        modifier = Modifier
+                            .size(70.dp)
+                            .clip(CircleShape)
+                            .background(Color.Black)
+                            .border(
+                                BorderStroke(
+                                    width = 2.dp,
+                                    color = localGreen
+                                ),
+                                shape = CircleShape
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Image(
+                            painter = painterResource(id = R.drawable.daisy_avatar),
+                            contentDescription = "Core Hub",
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(3.dp)
+                                .clip(CircleShape)
+                        )
+                    }
+                } else {
+                    val borderColor = if (nodeObj.isSelected) localOrange else localCyan
+                    val bubbleText = if (nodeObj.text.length > 12) {
+                        nodeObj.text.take(10) + "..."
+                    } else {
+                        nodeObj.text
+                    }
+
+                    Card(
+                        shape = RoundedCornerShape(10.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = Color(0xEE0B0B0F)
+                        ),
+                        border = BorderStroke(
+                            width = if (nodeObj.isSelected) 1.5.dp else 1.dp,
+                            color = borderColor
+                        ),
+                        modifier = Modifier
+                            .width(90.dp)
+                            .shadow(
+                                elevation = if (nodeObj.isSelected) 8.dp else 2.dp,
+                                shape = RoundedCornerShape(10.dp),
+                                ambientColor = borderColor,
+                                spotColor = borderColor
+                            )
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 6.dp, horizontal = 8.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = "BUBBLE #${nodeObj.id}",
+                                style = TextStyle(
+                                    fontFamily = FontFamily.Monospace,
+                                    fontSize = 7.5.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = borderColor
+                                )
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = bubbleText,
+                                style = TextStyle(
+                                    fontFamily = FontFamily.Monospace,
+                                    fontSize = 8.sp,
+                                    color = Color.LightGray,
+                                    textAlign = TextAlign.Center
+                                ),
+                                maxLines = 1
+                            )
+                        }
+                    }
+                }
+            }
+        }
+        
+        Row(
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .padding(12.dp)
+                .background(Color(0xD0040406), RoundedCornerShape(4.dp))
+                .border(0.5.dp, localBorder, RoundedCornerShape(4.dp))
+                .padding(horizontal = 6.dp, vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(5.dp)
+                    .background(localGreen, CircleShape)
+            )
+            Spacer(modifier = Modifier.width(5.dp))
+            Text(
+                text = "TETHER INTERACTIVE FORCE-DIRECTED LAYOUT ACTIVE",
+                fontFamily = FontFamily.Monospace,
+                fontSize = 7.5.sp,
+                color = Color.LightGray
+            )
+        }
+        
+        Text(
+            text = "DRAG BUBBLES TO DISTORT • TAP TO SELECT",
+            fontFamily = FontFamily.Monospace,
+            fontSize = 7.5.sp,
+            color = localMuted,
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(12.dp)
+        )
+    }
+}
+
+@Composable
+fun SparklineChart(
+    data: List<Float>,
+    color: Color,
+    unit: String,
+    modifier: Modifier = Modifier,
+    gridCount: Int = 3
+) {
+    val localMuted = Color(0xFF888899)
+    val localBorder = Color(0xFF1C1C24)
+    val maxVal = remember(data) { data.maxOrNull() ?: 100f }
+    val minVal = remember(data) { data.minOrNull() ?: 0f }
+    val avgVal = remember(data) { if (data.isEmpty()) 0f else data.average().toFloat() }
+    val currentVal = data.lastOrNull() ?: 0f
+
+    Column(modifier = modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.Bottom
+        ) {
+            Text(
+                text = String.format("%.1f %s", currentVal, unit),
+                style = TextStyle(
+                    fontFamily = FontFamily.Monospace,
+                    fontSize = 17.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = color
+                )
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    text = String.format("MIN:%.1f", minVal),
+                    style = TextStyle(
+                        fontFamily = FontFamily.Monospace,
+                        fontSize = 8.sp,
+                        color = localMuted
+                    )
+                )
+                Text(
+                    text = String.format("MAX:%.1f", maxVal),
+                    style = TextStyle(
+                        fontFamily = FontFamily.Monospace,
+                        fontSize = 8.sp,
+                        color = localMuted
+                    )
+                )
+                Text(
+                    text = String.format("AVG:%.1f", avgVal),
+                    style = TextStyle(
+                        fontFamily = FontFamily.Monospace,
+                        fontSize = 8.sp,
+                        color = localMuted
+                    )
+                )
+            }
+        }
+        
+        Spacer(modifier = Modifier.height(6.dp))
+        
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(65.dp)
+                .background(Color(0xFF040406), RoundedCornerShape(8.dp))
+                .border(1.dp, localBorder, RoundedCornerShape(8.dp))
+                .padding(vertical = 4.dp, horizontal = 6.dp)
+        ) {
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                val width = size.width
+                val height = size.height
+                val pointCount = data.size
+                
+                // 1. Draw horizontal gridlines (resembling D3.js svg grid lines)
+                val gridSpacing = height / (gridCount + 1)
+                for (i in 1..gridCount) {
+                    val y = gridSpacing * i
+                    drawLine(
+                        color = localBorder.copy(alpha = 0.5f),
+                        start = Offset(0f, y),
+                        end = Offset(width, y),
+                        strokeWidth = 1.dp.toPx(),
+                        pathEffect = PathEffect.dashPathEffect(floatArrayOf(6f, 6f), 0f)
+                    )
+                }
+                
+                if (pointCount > 1) {
+                    val dx = width / (pointCount - 1)
+                    val range = (maxVal - minVal).coerceAtLeast(1f)
+                    
+                    val points = data.mapIndexed { index, valItem ->
+                        val px = index * dx
+                        // Invert coordinates since 0,0 is top-left
+                        val py = height - ((valItem - minVal) / range) * (height - 12.dp.toPx()) - 6.dp.toPx()
+                        Offset(px, py)
+                    }
+                    
+                    // 2. Draw sparkline path
+                    val path = Path().apply {
+                        moveTo(points[0].x, points[0].y)
+                        for (i in 1 until points.size) {
+                            lineTo(points[i].x, points[i].y)
+                        }
+                    }
+                    
+                    // Glow effect line
+                    drawPath(
+                        path = path,
+                        color = color.copy(alpha = 0.35f),
+                        style = Stroke(width = 4.dp.toPx(), cap = StrokeCap.Round)
+                    )
+                    
+                    // Main crisp line
+                    drawPath(
+                        path = path,
+                        color = color,
+                        style = Stroke(width = 1.8.dp.toPx(), cap = StrokeCap.Round)
+                    )
+                    
+                    // 3. Draw gradient filled area (similar to D3.js area chart builder)
+                    val areaPath = Path().apply {
+                        moveTo(points[0].x, height)
+                        for (i in 0 until points.size) {
+                            lineTo(points[i].x, points[i].y)
+                        }
+                        lineTo(points.last().x, height)
+                        close()
+                    }
+                    drawPath(
+                        path = areaPath,
+                        brush = Brush.verticalGradient(
+                            colors = listOf(color.copy(alpha = 0.18f), Color.Transparent),
+                            startY = 0f,
+                            endY = height
+                        )
+                    )
+                    
+                    // 4. Highlight the last data node
+                    val lastPoint = points.last()
+                    drawCircle(
+                        color = color.copy(alpha = 0.25f),
+                        radius = 8.dp.toPx(),
+                        center = lastPoint
+                    )
+                    drawCircle(
+                        color = color,
+                        radius = 3.dp.toPx(),
+                        center = lastPoint
+                    )
+                }
+            }
+        }
+    }
+}
+
