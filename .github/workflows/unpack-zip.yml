@@ -1,6 +1,9 @@
 # Unpack any .zip at repo root and commit extracted contents back to main
-# This workflow runs on every push but will only perform the unpack step once.
-# It checks the head commit message and will skip if the commit message contains "[unpack-zip]" to avoid loops.
+# Robust workflow that safely handles ZIP filenames with spaces, parentheses, and other special chars.
+# - Uses safe shell options (set -euo pipefail)
+# - Locates the first regular .zip file without using ls parsing
+# - Extracts to a temporary directory then moves files individually to avoid glob expansion issues
+# - Commits only if there are changes
 name: Unpack Uploaded ZIP
 
 on:
@@ -25,31 +28,43 @@ jobs:
       - name: Find zip file
         id: findzip
         run: |
-          set -e
-          zipfile=$(ls *.zip 2>/dev/null | head -n 1 || true)
-          if [ -z "$zipfile" ]; then
+          set -euo pipefail
+          zipfile=""
+          # Use a loop so filenames with special chars don't break the shell
+          for f in *.zip; do
+            if [ -f "$f" ]; then
+              zipfile="$f"
+              break
+            fi
+          done
+          if [ -z "${zipfile}" ]; then
             echo "No zip files found in repo root, exiting"
             echo "found=false" >> $GITHUB_OUTPUT
             exit 0
           fi
           echo "found=true" >> $GITHUB_OUTPUT
-          echo "name=$zipfile" >> $GITHUB_OUTPUT
+          echo "name=${zipfile}" >> $GITHUB_OUTPUT
 
       - name: Unpack zip
         if: steps.findzip.outputs.found == 'true'
         run: |
-          set -e
-          zipfile=${{ steps.findzip.outputs.name }}
-          mkdir unpack_temp
-          unzip -q "$zipfile" -d unpack_temp
-          # Move extracted files into repo root, preserving structure
+          set -euo pipefail
+          zipfile="${{ steps.findzip.outputs.name }}"
+          mkdir -p unpack_temp
+          # Quote the filename when unzipping to handle special characters
+          unzip -q -- "$zipfile" -d unpack_temp
+
+          # Move extracted files into repo root safely; iterate to avoid glob expansion problems
           shopt -s dotglob || true
-          mv unpack_temp/* . || true
+          for src in unpack_temp/*; do
+            [ -e "$src" ] || continue
+            mv -- "$src" . || true
+          done
 
       - name: Commit extracted files
         if: steps.findzip.outputs.found == 'true'
         run: |
-          set -e
+          set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
