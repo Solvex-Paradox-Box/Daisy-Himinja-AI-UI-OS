@@ -4,6 +4,7 @@ import com.example.data.local.SovereignDao
 import com.example.data.model.TetherBubble
 import com.example.data.model.SovereignSolution
 import com.example.data.model.SystemMilestone
+import com.example.data.model.AppState
 import kotlinx.coroutines.flow.Flow
 
 class SovereignRepository(private val dao: SovereignDao) {
@@ -50,5 +51,18 @@ class SovereignRepository(private val dao: SovereignDao) {
 
     suspend fun clearAllMilestones() {
         dao.clearAllMilestones()
+    }
+
+    suspend fun reconcileState(localState: AppState, remoteState: AppState): AppState {
+        return if (localState.version >= remoteState.version) {
+            pushToRemote(localState)
+            localState.copy(isDirty = false)
+        } else {
+            remoteState.copy(isDirty = false)
+        }
+    }
+
+    private suspend fun pushToRemote(state: AppState) {
+        // Simulates pushing reconciled state to external mesh DHT nodes
     }
 }

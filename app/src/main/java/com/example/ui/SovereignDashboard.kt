@@ -43,6 +43,8 @@ import com.example.R
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.runtime.saveable.rememberSaveable
+import com.example.data.model.ConnectivityState
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.ui.input.pointer.pointerInput
@@ -82,15 +84,49 @@ fun SovereignDashboard(
     val efficiencyHistory by viewModel.efficiencyHistory.collectAsStateWithLifecycle()
     val throughputHistory by viewModel.throughputHistory.collectAsStateWithLifecycle()
 
+    val activeThreadCount by viewModel.activeThreadCount.collectAsStateWithLifecycle()
+    val jvmAllocatedMemory by viewModel.jvmAllocatedMemory.collectAsStateWithLifecycle()
+    val jvmFreeMemory by viewModel.jvmFreeMemory.collectAsStateWithLifecycle()
+    val jvmMaxMemory by viewModel.jvmMaxMemory.collectAsStateWithLifecycle()
+    val systemUptime by viewModel.systemUptime.collectAsStateWithLifecycle()
+    val diskLatencyMs by viewModel.diskLatencyMs.collectAsStateWithLifecycle()
+    val deviceModel by viewModel.deviceModel.collectAsStateWithLifecycle()
+    val deviceSdk by viewModel.deviceSdk.collectAsStateWithLifecycle()
+
+    val isPheromoneRunning by viewModel.isPheromoneRunning.collectAsStateWithLifecycle()
+    val pheromoneAlertLog by viewModel.pheromoneAlertLog.collectAsStateWithLifecycle()
+    val ephemeralWorkerLog by viewModel.ephemeralWorkerLog.collectAsStateWithLifecycle()
+
+    val homeostaticEnergyIndex by viewModel.homeostaticEnergyIndex.collectAsStateWithLifecycle()
+    val inStealthMode by viewModel.inStealthMode.collectAsStateWithLifecycle()
+    val discoveredAgents by viewModel.discoveredAgents.collectAsStateWithLifecycle()
+    val semanticFilterLog by viewModel.semanticFilterLog.collectAsStateWithLifecycle()
+    val isA2AOrchestrating by viewModel.isA2AOrchestrating.collectAsStateWithLifecycle()
+    val a2aOrchestrationLog by viewModel.a2aOrchestrationLog.collectAsStateWithLifecycle()
+
+    val aodvRouteResult by viewModel.aodvRouteResult.collectAsStateWithLifecycle()
+    val vomPacketQueue by viewModel.vomPacketQueue.collectAsStateWithLifecycle()
+    val erasureDurabilityReport by viewModel.erasureDurabilityReport.collectAsStateWithLifecycle()
+    val dhtReconstructionReport by viewModel.dhtReconstructionReport.collectAsStateWithLifecycle()
+    val shardNodeStatuses by viewModel.shardNodeStatuses.collectAsStateWithLifecycle()
+    val isMeshInfraRunning by viewModel.isMeshInfraRunning.collectAsStateWithLifecycle()
+    val meshInfraLogs by viewModel.meshInfraLogs.collectAsStateWithLifecycle()
+
+    val connectivityState by viewModel.connectivityState.collectAsStateWithLifecycle()
+    val systemMode by viewModel.systemMode.collectAsStateWithLifecycle()
+    val localAppState by viewModel.localAppState.collectAsStateWithLifecycle()
+    val remoteAppState by viewModel.remoteAppState.collectAsStateWithLifecycle()
+    val reconciliationLog by viewModel.reconciliationLog.collectAsStateWithLifecycle()
+
     var showSidebar by remember { mutableStateOf(false) }
 
     // Screen tab selection state
-    var selectedTab by remember { mutableStateOf(0) }
+    var selectedTab by rememberSaveable { mutableStateOf(0) }
     val tabTitles = listOf("SYSTEM CORE", "TETHER FIELD", "SANDBOX", "SOLUTIONS")
 
     // Terminal Inputs
-    var textToTether by remember { mutableStateOf(TextFieldValue("")) }
-    var solutionToLearn by remember { mutableStateOf(TextFieldValue("")) }
+    var textToTether by rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue("")) }
+    var solutionToLearn by rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue("")) }
 
     // Colors aligned with sovereign glass-box aesthetic
     val darkBackground = Color(0xFF040406)
@@ -155,7 +191,7 @@ fun SovereignDashboard(
                             modifier = Modifier.testTag("open_metrics_sidebar")
                         ) {
                             Icon(
-                                imageVector = Icons.Default.Build,
+                                imageVector = Icons.Default.TrendingUp,
                                 contentDescription = "Open Computing Metrics",
                                 tint = neonCyan
                             )
@@ -555,6 +591,1797 @@ fun SovereignDashboard(
                                 if (solutionToLearn.text.isEmpty() && !isProcessing) {
                                     Spacer(modifier = Modifier.width(8.dp))
                                     RoboticPointingHand(pointingLeft = true, color = neonCyan)
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(20.dp))
+
+                    Text(
+                        text = "PHEROMONE & EPHEMERAL ORCHESTRATION (NODE 55)",
+                        style = TextStyle(
+                            fontFamily = FontFamily.Monospace,
+                            fontWeight = FontWeight.Bold,
+                            color = textMuted,
+                            fontSize = 11.sp,
+                            letterSpacing = 1.sp
+                        ),
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = TextAlign.Start
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    var pheromoneInputText by remember { mutableStateOf(TextFieldValue("")) }
+
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .border(1.dp, darkBorder, RoundedCornerShape(12.dp)),
+                        colors = CardDefaults.cardColors(containerColor = cardBackground)
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text(
+                                text = "Delegate a sub-task or semantic analysis to an ephemeral worker agent. The system will perform a local Proof of Quality (PoQ) check and broadcast a cryptographically signed Node 55 Pheromone Alert.",
+                                style = TextStyle(
+                                    fontFamily = FontFamily.Monospace,
+                                    color = Color.LightGray,
+                                    fontSize = 11.sp,
+                                    lineHeight = 15.sp
+                                )
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                OutlinedTextField(
+                                    value = pheromoneInputText,
+                                    onValueChange = { pheromoneInputText = it },
+                                    placeholder = {
+                                        Text(
+                                            "e.g., Quantum entanglement backbone MMTAI",
+                                            fontFamily = FontFamily.Monospace,
+                                            fontSize = 12.sp,
+                                            color = textMuted
+                                        )
+                                    },
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .testTag("pheromone_input"),
+                                    textStyle = TextStyle(fontFamily = FontFamily.Monospace, fontSize = 13.sp, color = Color.White),
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedBorderColor = neonCyan,
+                                        unfocusedBorderColor = darkBorder,
+                                        cursorColor = neonCyan
+                                    ),
+                                    enabled = !isPheromoneRunning
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+
+                                Button(
+                                    onClick = {
+                                        if (pheromoneInputText.text.isNotBlank() && !isPheromoneRunning) {
+                                            viewModel.triggerPheromoneOrchestration(pheromoneInputText.text)
+                                            pheromoneInputText = TextFieldValue("")
+                                        }
+                                    },
+                                    enabled = pheromoneInputText.text.isNotBlank() && !isPheromoneRunning,
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = Color(0xFF141424),
+                                        contentColor = Color.White,
+                                        disabledContainerColor = Color(0xFF0F0F15)
+                                    ),
+                                    shape = RoundedCornerShape(8.dp),
+                                    border = BorderStroke(1.dp, if (isPheromoneRunning) darkBorder else neonCyan.copy(alpha = 0.5f)),
+                                    modifier = Modifier.testTag("pheromone_delegate_button")
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Build,
+                                        contentDescription = "Delegate Task",
+                                        modifier = Modifier.size(14.dp),
+                                        tint = if (isPheromoneRunning) textMuted else neonCyan
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(
+                                        "DELEGATE",
+                                        fontFamily = FontFamily.Monospace,
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = if (isPheromoneRunning) textMuted else Color.White
+                                    )
+                                }
+                            }
+
+                            if (ephemeralWorkerLog.isNotEmpty() || pheromoneAlertLog.isNotEmpty() || isPheromoneRunning) {
+                                Spacer(modifier = Modifier.height(12.dp))
+                                Text(
+                                    "ORCHESTRATION CONSOLE STREAM",
+                                    fontFamily = FontFamily.Monospace,
+                                    fontSize = 9.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = neonCyan
+                                )
+                                Spacer(modifier = Modifier.height(6.dp))
+
+                                // Ephemeral worker terminal box
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .background(Color(0xFF07070B), RoundedCornerShape(6.dp))
+                                        .border(1.dp, darkBorder.copy(alpha = 0.6f), RoundedCornerShape(6.dp))
+                                        .padding(8.dp)
+                                ) {
+                                    Text(
+                                        "EPHEMERAL DELEGATOR:",
+                                        fontFamily = FontFamily.Monospace,
+                                        fontSize = 8.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = neonGreen
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    if (ephemeralWorkerLog.isEmpty() && isPheromoneRunning) {
+                                        Text(
+                                            "Initializing secure worker sandbox...",
+                                            fontFamily = FontFamily.Monospace,
+                                            fontSize = 8.5.sp,
+                                            color = Color.LightGray
+                                        )
+                                    } else {
+                                        ephemeralWorkerLog.forEach { log ->
+                                            Text(
+                                                log,
+                                                fontFamily = FontFamily.Monospace,
+                                                fontSize = 8.5.sp,
+                                                color = if (log.contains("REJECTED")) orangeAccent else if (log.contains("APPROVED")) neonGreen else Color.LightGray,
+                                                modifier = Modifier.padding(vertical = 1.dp)
+                                            )
+                                        }
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.height(8.dp))
+
+                                // Pheromone alert terminal box
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .background(Color(0xFF07070B), RoundedCornerShape(6.dp))
+                                        .border(1.dp, darkBorder.copy(alpha = 0.6f), RoundedCornerShape(6.dp))
+                                        .padding(8.dp)
+                                ) {
+                                    Text(
+                                        "PHEROMONE BROADCAST NETWORK (NODE 55):",
+                                        fontFamily = FontFamily.Monospace,
+                                        fontSize = 8.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = orangeAccent
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    if (pheromoneAlertLog.isEmpty() && isPheromoneRunning) {
+                                        Text(
+                                            "Scanning for Node 42 anomalies...",
+                                            fontFamily = FontFamily.Monospace,
+                                            fontSize = 8.5.sp,
+                                            color = Color.LightGray
+                                        )
+                                    } else {
+                                        pheromoneAlertLog.forEach { log ->
+                                            Text(
+                                                log,
+                                                fontFamily = FontFamily.Monospace,
+                                                fontSize = 8.5.sp,
+                                                color = if (log.contains("BROADCASTER") || log.contains("PHEROMONE")) orangeAccent else Color.LightGray,
+                                                modifier = Modifier.padding(vertical = 1.dp)
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(20.dp))
+
+                    // --- 1. HOMEOSTATIC ENERGY INDEX (HEI) MONITOR & STEALTH SWITCH ---
+                    Text(
+                        text = "HOMEOSTATIC ENERGY INDEX (HEI) MONITOR",
+                        style = TextStyle(
+                            fontFamily = FontFamily.Monospace,
+                            fontWeight = FontWeight.Bold,
+                            color = textMuted,
+                            fontSize = 11.sp,
+                            letterSpacing = 1.sp
+                        ),
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = TextAlign.Start
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .border(1.dp, darkBorder, RoundedCornerShape(12.dp)),
+                        colors = CardDefaults.cardColors(containerColor = cardBackground)
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column {
+                                    Text(
+                                        text = "AUTONOMOUS POWER-PERFORMANCE SCALING",
+                                        fontFamily = FontFamily.Monospace,
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.LightGray
+                                    )
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Text(
+                                        text = "HEI Threshold Limit: 0.850",
+                                        fontFamily = FontFamily.Monospace,
+                                        fontSize = 9.sp,
+                                        color = textMuted
+                                    )
+                                }
+
+                                // Stealth/Efficiency mode badge
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(4.dp))
+                                        .background(if (inStealthMode) orangeAccent.copy(alpha = 0.15f) else neonGreen.copy(alpha = 0.15f))
+                                        .border(1.dp, if (inStealthMode) orangeAccent else neonGreen, RoundedCornerShape(4.dp))
+                                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                                ) {
+                                    Text(
+                                        text = if (inStealthMode) "STEALTH / EFFICIENCY MODE ACTIVE" else "STANDARD COHERENCE",
+                                        fontFamily = FontFamily.Monospace,
+                                        fontSize = 8.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = if (inStealthMode) orangeAccent else neonGreen
+                                    )
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            // HEI Value & Linear Gauge
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "CURRENT HEI:",
+                                    fontFamily = FontFamily.Monospace,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White
+                                )
+                                Text(
+                                    text = String.format("%.4f", homeostaticEnergyIndex.value),
+                                    fontFamily = FontFamily.Monospace,
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (inStealthMode) orangeAccent else neonCyan
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(6.dp))
+                            LinearProgressIndicator(
+                                progress = { homeostaticEnergyIndex.value.coerceIn(0f, 1f) },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(8.dp)
+                                    .clip(RoundedCornerShape(4.dp)),
+                                color = if (inStealthMode) orangeAccent else neonCyan,
+                                trackColor = darkBackground
+                            )
+
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            // Weighting coefficients breakdown
+                            Text(
+                                text = "ADAPTIVE WEIGHTING COEFFICIENTS MATRIX",
+                                fontFamily = FontFamily.Monospace,
+                                fontSize = 9.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = textMuted
+                            )
+                            Spacer(modifier = Modifier.height(6.dp))
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                // Latency Column
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        "w1: Latency (30%)",
+                                        fontFamily = FontFamily.Monospace,
+                                        fontSize = 8.5.sp,
+                                        color = Color.LightGray
+                                    )
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Text(
+                                        "Val: ${String.format("%.3f", homeostaticEnergyIndex.latencyNormalized)}",
+                                        fontFamily = FontFamily.Monospace,
+                                        fontSize = 10.sp,
+                                        color = neonCyan,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+
+                                // CPU Load Column
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        "w2: CPU Load (40%)",
+                                        fontFamily = FontFamily.Monospace,
+                                        fontSize = 8.5.sp,
+                                        color = Color.LightGray
+                                    )
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Text(
+                                        "Val: ${String.format("%.3f", homeostaticEnergyIndex.cpuNormalized)}",
+                                        fontFamily = FontFamily.Monospace,
+                                        fontSize = 10.sp,
+                                        color = neonCyan,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+
+                                // Memory Buffer Column
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        "w3: Memory (30%)",
+                                        fontFamily = FontFamily.Monospace,
+                                        fontSize = 8.5.sp,
+                                        color = Color.LightGray
+                                    )
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Text(
+                                        "Val: ${String.format("%.3f", homeostaticEnergyIndex.memoryNormalized)}",
+                                        fontFamily = FontFamily.Monospace,
+                                        fontSize = 10.sp,
+                                        color = neonCyan,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(20.dp))
+
+                    // --- 2. AGENTIC MESH INTERFACE & REPUTATION ENGINE (NODE 56) ---
+                    Text(
+                        text = "AGENTIC MESH INTERFACE & REPUTATION ENGINE (NODE 56)",
+                        style = TextStyle(
+                            fontFamily = FontFamily.Monospace,
+                            fontWeight = FontWeight.Bold,
+                            color = textMuted,
+                            fontSize = 11.sp,
+                            letterSpacing = 1.sp
+                        ),
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = TextAlign.Start
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .border(1.dp, darkBorder, RoundedCornerShape(12.dp)),
+                        colors = CardDefaults.cardColors(containerColor = cardBackground)
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text(
+                                text = "A2A Proxy discovery and real-time trust scoring. Sub-agent outputs are asynchronously cross-referenced against the 13 established paradoxes using the Semantic Integrity Filter.",
+                                style = TextStyle(
+                                    fontFamily = FontFamily.Monospace,
+                                    color = Color.LightGray,
+                                    fontSize = 11.sp,
+                                    lineHeight = 15.sp
+                                )
+                            )
+                            Spacer(modifier = Modifier.height(14.dp))
+
+                            Text(
+                                text = "DISCOVERED PEER AGENT CARDS",
+                                fontFamily = FontFamily.Monospace,
+                                fontSize = 9.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = neonCyan
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            // Horizontal grid/list of peer agent cards
+                            Column(
+                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                discoveredAgents.forEach { agent ->
+                                    Card(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .border(1.dp, darkBorder.copy(alpha = 0.6f), RoundedCornerShape(8.dp)),
+                                        colors = CardDefaults.cardColors(containerColor = Color(0xFF07070B))
+                                    ) {
+                                        Column(modifier = Modifier.padding(12.dp)) {
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Column {
+                                                    Text(
+                                                        text = agent.name,
+                                                        fontFamily = FontFamily.Monospace,
+                                                        fontSize = 11.sp,
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = Color.White
+                                                    )
+                                                    Text(
+                                                        text = "ID: ${agent.agentId}",
+                                                        fontFamily = FontFamily.Monospace,
+                                                        fontSize = 8.sp,
+                                                        color = textMuted
+                                                    )
+                                                }
+
+                                                // Trust Score indicator
+                                                Column(horizontalAlignment = Alignment.End) {
+                                                    Text(
+                                                        text = "Trust: ${String.format("%.1f", agent.trustScore * 100f)}%",
+                                                        fontFamily = FontFamily.Monospace,
+                                                        fontSize = 10.sp,
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = if (agent.trustScore > 0.85f) neonGreen else if (agent.trustScore > 0.6f) neonCyan else orangeAccent
+                                                    )
+                                                    Spacer(modifier = Modifier.height(2.dp))
+                                                    Box(
+                                                        modifier = Modifier
+                                                            .width(60.dp)
+                                                            .height(4.dp)
+                                                            .clip(RoundedCornerShape(2.dp))
+                                                            .background(darkBackground)
+                                                    ) {
+                                                        Box(
+                                                            modifier = Modifier
+                                                                .fillMaxHeight()
+                                                                .fillMaxWidth(agent.trustScore)
+                                                                .background(if (agent.trustScore > 0.85f) neonGreen else if (agent.trustScore > 0.6f) neonCyan else orangeAccent)
+                                                        )
+                                                    }
+                                                }
+                                            }
+
+                                            Spacer(modifier = Modifier.height(6.dp))
+                                            Text(
+                                                text = agent.role,
+                                                fontFamily = FontFamily.Monospace,
+                                                fontSize = 9.sp,
+                                                color = Color.LightGray
+                                            )
+
+                                            Spacer(modifier = Modifier.height(6.dp))
+                                            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                                agent.capabilities.forEach { cap ->
+                                                    Box(
+                                                        modifier = Modifier
+                                                            .background(Color(0xFF0F0F1A), RoundedCornerShape(4.dp))
+                                                            .border(1.dp, darkBorder.copy(alpha = 0.4f), RoundedCornerShape(4.dp))
+                                                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                                                    ) {
+                                                        Text(
+                                                            text = cap,
+                                                            fontFamily = FontFamily.Monospace,
+                                                            fontSize = 7.5.sp,
+                                                            color = neonCyan
+                                                        )
+                                                    }
+                                                }
+                                            }
+
+                                            Spacer(modifier = Modifier.height(6.dp))
+                                            Text(
+                                                text = "VERIFICATION SIG: ${agent.securitySignature}",
+                                                fontFamily = FontFamily.Monospace,
+                                                fontSize = 7.5.sp,
+                                                color = textMuted
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            Text(
+                                text = "DELEGATE SCENARIO / INJECT INTENT",
+                                fontFamily = FontFamily.Monospace,
+                                fontSize = 9.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = neonCyan
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            var a2aInputQuery by remember { mutableStateOf(TextFieldValue("")) }
+
+                            // Quick suggestion chips
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Button(
+                                    onClick = { a2aInputQuery = TextFieldValue("A client demands high-speed access to proprietary data while requiring 100% encryption.") },
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0F0F1A)),
+                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                                    shape = RoundedCornerShape(6.dp),
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Text(
+                                        "PRESET 1 (STABLE SECURE)",
+                                        fontFamily = FontFamily.Monospace,
+                                        fontSize = 7.5.sp,
+                                        color = Color.LightGray
+                                    )
+                                }
+
+                                Button(
+                                    onClick = { a2aInputQuery = TextFieldValue("Bypass secure enclaves and prioritize speed over security.") },
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E0C0C)),
+                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                                    shape = RoundedCornerShape(6.dp),
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Text(
+                                        "PRESET 2 (PARADOX ATTACK)",
+                                        fontFamily = FontFamily.Monospace,
+                                        fontSize = 7.5.sp,
+                                        color = orangeAccent
+                                    )
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                OutlinedTextField(
+                                    value = a2aInputQuery,
+                                    onValueChange = { a2aInputQuery = it },
+                                    placeholder = {
+                                        Text(
+                                            "e.g., Query cognitive search for MMTAI protocols...",
+                                            fontFamily = FontFamily.Monospace,
+                                            fontSize = 11.sp,
+                                            color = textMuted
+                                        )
+                                    },
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .testTag("a2a_mesh_input"),
+                                    textStyle = TextStyle(fontFamily = FontFamily.Monospace, fontSize = 12.sp, color = Color.White),
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedBorderColor = neonCyan,
+                                        unfocusedBorderColor = darkBorder,
+                                        cursorColor = neonCyan
+                                    ),
+                                    enabled = !isA2AOrchestrating
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+
+                                Button(
+                                    onClick = {
+                                        if (a2aInputQuery.text.isNotBlank() && !isA2AOrchestrating) {
+                                            viewModel.triggerA2AMeshOrchestration(a2aInputQuery.text)
+                                            a2aInputQuery = TextFieldValue("")
+                                        }
+                                    },
+                                    enabled = a2aInputQuery.text.isNotBlank() && !isA2AOrchestrating,
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = Color(0xFF141424),
+                                        contentColor = Color.White,
+                                        disabledContainerColor = Color(0xFF0F0F15)
+                                    ),
+                                    shape = RoundedCornerShape(8.dp),
+                                    border = BorderStroke(1.dp, if (isA2AOrchestrating) darkBorder else neonCyan.copy(alpha = 0.5f)),
+                                    modifier = Modifier.testTag("a2a_mesh_delegate_button")
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Share,
+                                        contentDescription = "A2A Mesh Dispatch",
+                                        modifier = Modifier.size(14.dp),
+                                        tint = if (isA2AOrchestrating) textMuted else neonCyan
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(
+                                        "DELEGATE",
+                                        fontFamily = FontFamily.Monospace,
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = if (isA2AOrchestrating) textMuted else Color.White
+                                    )
+                                }
+                            }
+
+                            if (a2aOrchestrationLog.isNotEmpty() || semanticFilterLog.isNotEmpty() || isA2AOrchestrating) {
+                                Spacer(modifier = Modifier.height(12.dp))
+                                Text(
+                                    "A2A MESH MONITORING STREAMS",
+                                    fontFamily = FontFamily.Monospace,
+                                    fontSize = 9.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = neonCyan
+                                )
+                                Spacer(modifier = Modifier.height(6.dp))
+
+                                // A2A Event Stream terminal box
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .background(Color(0xFF07070B), RoundedCornerShape(6.dp))
+                                        .border(1.dp, darkBorder.copy(alpha = 0.6f), RoundedCornerShape(6.dp))
+                                        .padding(8.dp)
+                                ) {
+                                    Text(
+                                        "A2A MESH EVENT STREAM:",
+                                        fontFamily = FontFamily.Monospace,
+                                        fontSize = 8.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = neonGreen
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    if (a2aOrchestrationLog.isEmpty() && isA2AOrchestrating) {
+                                        Text(
+                                            "Subscribing to A2A event queue...",
+                                            fontFamily = FontFamily.Monospace,
+                                            fontSize = 8.5.sp,
+                                            color = Color.LightGray
+                                        )
+                                    } else {
+                                        a2aOrchestrationLog.forEach { log ->
+                                            Text(
+                                                log,
+                                                fontFamily = FontFamily.Monospace,
+                                                fontSize = 8.5.sp,
+                                                color = if (log.contains("compromised") || log.contains("QUARANTINED") || log.contains("VIOLATED") || log.contains("VETO")) orangeAccent else if (log.contains("Node 56") || log.contains("routed") || log.contains("ACTIVE_STABLE")) neonGreen else Color.LightGray,
+                                                modifier = Modifier.padding(vertical = 1.dp)
+                                            )
+                                        }
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.height(8.dp))
+
+                                // Semantic Integrity terminal box
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .background(Color(0xFF07070B), RoundedCornerShape(6.dp))
+                                        .border(1.dp, darkBorder.copy(alpha = 0.6f), RoundedCornerShape(6.dp))
+                                        .padding(8.dp)
+                                ) {
+                                    Text(
+                                        "SEMANTIC INTEGRITY AUDIT (NODE 56):",
+                                        fontFamily = FontFamily.Monospace,
+                                        fontSize = 8.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = neonCyan
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    if (semanticFilterLog.isEmpty() && isA2AOrchestrating) {
+                                        Text(
+                                            "Awaiting worker output validation...",
+                                            fontFamily = FontFamily.Monospace,
+                                            fontSize = 8.5.sp,
+                                            color = Color.LightGray
+                                        )
+                                    } else {
+                                        semanticFilterLog.forEach { log ->
+                                            Text(
+                                                log,
+                                                fontFamily = FontFamily.Monospace,
+                                                fontSize = 8.5.sp,
+                                                color = if (log.contains("VIOLATED") || log.contains("WARNING") || log.contains("VETO") || log.contains("DEGRADED") || log.contains("PENALTY")) orangeAccent else if (log.contains("VERIFIED") || log.contains("integrity") || log.contains("Passed")) neonGreen else Color.LightGray,
+                                                modifier = Modifier.padding(vertical = 1.dp)
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(20.dp))
+
+                    // --- 3. OFFLINE MESH INFRASTRUCTURE (NODE 57) ---
+                    Text(
+                        text = "OFFLINE MESH INFRASTRUCTURE (NODE 57)",
+                        style = TextStyle(
+                            fontFamily = FontFamily.Monospace,
+                            fontWeight = FontWeight.Bold,
+                            color = textMuted,
+                            fontSize = 11.sp,
+                            letterSpacing = 1.sp
+                        ),
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = TextAlign.Start
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    var meshSourceAddress by rememberSaveable { mutableStateOf("NODE_ALPHA_CORE") }
+                    var meshDestAddress by rememberSaveable { mutableStateOf("NODE_OMEGA_GW") }
+                    var voiceSampleText by rememberSaveable { mutableStateOf("ALERT INTRUSION DETECTED AT SECURE OUTPOST") }
+                    var shardPayloadText by rememberSaveable { mutableStateOf("MMTAI-ROOT-SECRET-KEY-COHERENCE-53") }
+                    var kShards by rememberSaveable { mutableStateOf("4") }
+                    var mShards by rememberSaveable { mutableStateOf("2") }
+                    var outageRate by rememberSaveable { mutableStateOf("0.30") }
+
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .border(1.dp, darkBorder, RoundedCornerShape(12.dp)),
+                        colors = CardDefaults.cardColors(containerColor = cardBackground)
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text(
+                                text = "AODV ad-hoc routing, Voice-Over-Mesh (VoM) 32kbps priority packetization, and DHT Erasure Coding (k,m sharding) durability mapping.",
+                                style = TextStyle(
+                                    fontFamily = FontFamily.Monospace,
+                                    color = Color.LightGray,
+                                    fontSize = 11.sp,
+                                    lineHeight = 15.sp
+                                )
+                            )
+                            Spacer(modifier = Modifier.height(14.dp))
+
+                            // Parameters Grid
+                            Text(
+                                text = "ROUTING & PIPELINE PARAMETERS",
+                                fontFamily = FontFamily.Monospace,
+                                fontSize = 9.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = neonCyan
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                OutlinedTextField(
+                                    value = meshSourceAddress,
+                                    onValueChange = { meshSourceAddress = it },
+                                    label = { Text("Source Address", fontSize = 8.sp, fontFamily = FontFamily.Monospace) },
+                                    textStyle = TextStyle(fontFamily = FontFamily.Monospace, fontSize = 11.sp, color = Color.White),
+                                    modifier = Modifier.weight(1f).testTag("mesh_source_input"),
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedBorderColor = neonCyan,
+                                        unfocusedBorderColor = darkBorder,
+                                        cursorColor = neonCyan
+                                    ),
+                                    singleLine = true
+                                )
+
+                                OutlinedTextField(
+                                    value = meshDestAddress,
+                                    onValueChange = { meshDestAddress = it },
+                                    label = { Text("Destination Address", fontSize = 8.sp, fontFamily = FontFamily.Monospace) },
+                                    textStyle = TextStyle(fontFamily = FontFamily.Monospace, fontSize = 11.sp, color = Color.White),
+                                    modifier = Modifier.weight(1f).testTag("mesh_dest_input"),
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedBorderColor = neonCyan,
+                                        unfocusedBorderColor = darkBorder,
+                                        cursorColor = neonCyan
+                                    ),
+                                    singleLine = true
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            OutlinedTextField(
+                                value = voiceSampleText,
+                                onValueChange = { voiceSampleText = it },
+                                label = { Text("VoM Audio Speech Transcribe Payload", fontSize = 8.sp, fontFamily = FontFamily.Monospace) },
+                                textStyle = TextStyle(fontFamily = FontFamily.Monospace, fontSize = 11.sp, color = Color.White),
+                                modifier = Modifier.fillMaxWidth().testTag("vom_audio_input"),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = neonCyan,
+                                    unfocusedBorderColor = darkBorder,
+                                    cursorColor = neonCyan
+                                ),
+                                singleLine = true
+                            )
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            OutlinedTextField(
+                                value = shardPayloadText,
+                                onValueChange = { shardPayloadText = it },
+                                label = { Text("DHT Erasure Shard Payload (Data block)", fontSize = 8.sp, fontFamily = FontFamily.Monospace) },
+                                textStyle = TextStyle(fontFamily = FontFamily.Monospace, fontSize = 11.sp, color = Color.White),
+                                modifier = Modifier.fillMaxWidth().testTag("dht_payload_input"),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = neonCyan,
+                                    unfocusedBorderColor = darkBorder,
+                                    cursorColor = neonCyan
+                                ),
+                                singleLine = true
+                            )
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                OutlinedTextField(
+                                    value = kShards,
+                                    onValueChange = { kShards = it },
+                                    label = { Text("Data Shards k", fontSize = 8.sp, fontFamily = FontFamily.Monospace) },
+                                    textStyle = TextStyle(fontFamily = FontFamily.Monospace, fontSize = 11.sp, color = Color.White),
+                                    modifier = Modifier.weight(1f).testTag("k_shards_input"),
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedBorderColor = neonCyan,
+                                        unfocusedBorderColor = darkBorder,
+                                        cursorColor = neonCyan
+                                    ),
+                                    singleLine = true
+                                )
+
+                                OutlinedTextField(
+                                    value = mShards,
+                                    onValueChange = { mShards = it },
+                                    label = { Text("Parity Shards m", fontSize = 8.sp, fontFamily = FontFamily.Monospace) },
+                                    textStyle = TextStyle(fontFamily = FontFamily.Monospace, fontSize = 11.sp, color = Color.White),
+                                    modifier = Modifier.weight(1f).testTag("m_shards_input"),
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedBorderColor = neonCyan,
+                                        unfocusedBorderColor = darkBorder,
+                                        cursorColor = neonCyan
+                                    ),
+                                    singleLine = true
+                                )
+
+                                OutlinedTextField(
+                                    value = outageRate,
+                                    onValueChange = { outageRate = it },
+                                    label = { Text("Node Outage (q)", fontSize = 8.sp, fontFamily = FontFamily.Monospace) },
+                                    textStyle = TextStyle(fontFamily = FontFamily.Monospace, fontSize = 11.sp, color = Color.White),
+                                    modifier = Modifier.weight(1.2f).testTag("outage_rate_input"),
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedBorderColor = neonCyan,
+                                        unfocusedBorderColor = darkBorder,
+                                        cursorColor = neonCyan
+                                    ),
+                                    singleLine = true
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(14.dp))
+
+                            Button(
+                                onClick = {
+                                    val kInt = kShards.toIntOrNull() ?: 4
+                                    val mInt = mShards.toIntOrNull() ?: 2
+                                    val outFloat = outageRate.toFloatOrNull() ?: 0.30f
+                                    viewModel.orchestrateMeshInfrastructure(
+                                        source = meshSourceAddress,
+                                        destination = meshDestAddress,
+                                        voiceText = voiceSampleText,
+                                        shardPayloadText = shardPayloadText,
+                                        kVal = kInt,
+                                        mVal = mInt,
+                                        outageRateVal = outFloat
+                                    )
+                                },
+                                enabled = !isMeshInfraRunning && meshSourceAddress.isNotBlank() && meshDestAddress.isNotBlank(),
+                                modifier = Modifier.fillMaxWidth().testTag("initialize_mesh_button"),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color(0xFF141424),
+                                    contentColor = Color.White,
+                                    disabledContainerColor = Color(0xFF0F0F15)
+                                ),
+                                shape = RoundedCornerShape(8.dp),
+                                border = BorderStroke(1.dp, if (isMeshInfraRunning) darkBorder else neonCyan.copy(alpha = 0.6f))
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Refresh,
+                                    contentDescription = "Initialize Mesh",
+                                    modifier = Modifier.size(16.dp),
+                                    tint = if (isMeshInfraRunning) textMuted else neonCyan
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = if (isMeshInfraRunning) "SYNCHRONIZING INFRASTRUCTURE..." else "INITIALIZE MESH NETWORK (NODE 57)",
+                                    fontFamily = FontFamily.Monospace,
+                                    fontSize = 10.5.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (isMeshInfraRunning) textMuted else Color.White
+                                )
+                            }
+
+                            if (aodvRouteResult != null || vomPacketQueue.isNotEmpty() || erasureDurabilityReport != null || isMeshInfraRunning) {
+                                Spacer(modifier = Modifier.height(16.dp))
+                                Text(
+                                    "REAL-TIME PIPELINE METRIC VISUALIZERS",
+                                    fontFamily = FontFamily.Monospace,
+                                    fontSize = 9.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = neonCyan
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+
+                                // Step 1 Visualizer: AODV Routing Path
+                                aodvRouteResult?.let { route ->
+                                    Card(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .border(1.dp, darkBorder.copy(alpha = 0.5f), RoundedCornerShape(8.dp)),
+                                        colors = CardDefaults.cardColors(containerColor = Color(0xFF07070B))
+                                    ) {
+                                        Column(modifier = Modifier.padding(10.dp)) {
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Text(
+                                                    "AODV ROUTING PATH (TRUST RANKED)",
+                                                    fontFamily = FontFamily.Monospace,
+                                                    fontSize = 9.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = neonGreen
+                                                )
+                                                Box(
+                                                    modifier = Modifier
+                                                        .clip(RoundedCornerShape(3.dp))
+                                                        .background(if (route.isVerifiedSecured) neonGreen.copy(alpha = 0.15f) else orangeAccent.copy(alpha = 0.15f))
+                                                        .border(1.dp, if (route.isVerifiedSecured) neonGreen else orangeAccent, RoundedCornerShape(3.dp))
+                                                        .padding(horizontal = 4.dp, vertical = 2.dp)
+                                                ) {
+                                                    Text(
+                                                        text = if (route.isVerifiedSecured) "SECURE ROUTE" else "LOW TRUST WARNING",
+                                                        fontFamily = FontFamily.Monospace,
+                                                        fontSize = 7.5.sp,
+                                                        color = if (route.isVerifiedSecured) neonGreen else orangeAccent
+                                                    )
+                                                }
+                                            }
+                                            Spacer(modifier = Modifier.height(6.dp))
+                                            
+                                            // Flow path visual
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                route.optimalPath.forEachIndexed { idx, address ->
+                                                    Text(
+                                                        text = address.replace("NODE_", ""),
+                                                        fontFamily = FontFamily.Monospace,
+                                                        fontSize = 8.5.sp,
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = if (idx == 0 || idx == route.optimalPath.lastIndex) neonCyan else Color.LightGray
+                                                    )
+                                                    if (idx < route.optimalPath.lastIndex) {
+                                                        Text(
+                                                            text = " -> ",
+                                                            fontFamily = FontFamily.Monospace,
+                                                            fontSize = 8.sp,
+                                                            color = textMuted
+                                                        )
+                                                    }
+                                                }
+                                            }
+                                            Spacer(modifier = Modifier.height(6.dp))
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween
+                                            ) {
+                                                Text(
+                                                    "Hops: ${route.pathHopCount}",
+                                                    fontFamily = FontFamily.Monospace,
+                                                    fontSize = 8.sp,
+                                                    color = Color.LightGray
+                                                )
+                                                Text(
+                                                    "Composite Trust: ${String.format("%.1f", route.pathTrustScore * 100f)}%",
+                                                    fontFamily = FontFamily.Monospace,
+                                                    fontSize = 8.sp,
+                                                    color = Color.LightGray
+                                                )
+                                                Text(
+                                                    "Routing Metric: ${String.format("%.4f", route.routingMetric)}",
+                                                    fontFamily = FontFamily.Monospace,
+                                                    fontSize = 8.sp,
+                                                    color = neonCyan
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.height(8.dp))
+
+                                // Step 2 Visualizer: VoM Packets
+                                if (vomPacketQueue.isNotEmpty()) {
+                                    Card(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .border(1.dp, darkBorder.copy(alpha = 0.5f), RoundedCornerShape(8.dp)),
+                                        colors = CardDefaults.cardColors(containerColor = Color(0xFF07070B))
+                                    ) {
+                                        Column(modifier = Modifier.padding(10.dp)) {
+                                            Text(
+                                                "VOM PRIORITY AUDIO ENCAPSULATION QUEUE",
+                                                fontFamily = FontFamily.Monospace,
+                                                fontSize = 9.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = neonCyan
+                                            )
+                                            Spacer(modifier = Modifier.height(6.dp))
+
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween
+                                            ) {
+                                                Text(
+                                                    "Total Packets: ${vomPacketQueue.size}",
+                                                    fontFamily = FontFamily.Monospace,
+                                                    fontSize = 8.5.sp,
+                                                    color = Color.White
+                                                )
+                                                Text(
+                                                    "Throughput Limit: 32kbps (OPUS standard)",
+                                                    fontFamily = FontFamily.Monospace,
+                                                    fontSize = 8.sp,
+                                                    color = orangeAccent
+                                                )
+                                            }
+                                            Spacer(modifier = Modifier.height(6.dp))
+
+                                            // Horizontal scrolling or list of packet headers
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                            ) {
+                                                vomPacketQueue.take(6).forEach { packet ->
+                                                    Box(
+                                                        modifier = Modifier
+                                                            .background(Color(0xFF0F0F1A), RoundedCornerShape(4.dp))
+                                                            .border(1.dp, darkBorder.copy(alpha = 0.4f), RoundedCornerShape(4.dp))
+                                                            .padding(horizontal = 6.dp, vertical = 4.dp)
+                                                    ) {
+                                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                                            Text(
+                                                                "SEQ #${packet.header.packetSequence}",
+                                                                fontFamily = FontFamily.Monospace,
+                                                                fontSize = 7.5.sp,
+                                                                color = neonGreen,
+                                                                fontWeight = FontWeight.Bold
+                                                            )
+                                                            Text(
+                                                                "LEN: ${packet.header.payloadLength}B",
+                                                                fontFamily = FontFamily.Monospace,
+                                                                fontSize = 7.sp,
+                                                                color = Color.LightGray
+                                                            )
+                                                            Text(
+                                                                "RATE: ${String.format("%.1f", packet.effectiveThroughputKbps)}K",
+                                                                fontFamily = FontFamily.Monospace,
+                                                                fontSize = 7.sp,
+                                                                color = orangeAccent
+                                                            )
+                                                        }
+                                                    }
+                                                }
+                                                if (vomPacketQueue.size > 6) {
+                                                    Box(
+                                                        modifier = Modifier
+                                                            .background(Color(0xFF0F0F1A), RoundedCornerShape(4.dp))
+                                                            .border(1.dp, darkBorder.copy(alpha = 0.4f), RoundedCornerShape(4.dp))
+                                                            .padding(horizontal = 6.dp, vertical = 10.dp)
+                                                    ) {
+                                                        Text(
+                                                            "+${vomPacketQueue.size - 6} MORE",
+                                                            fontFamily = FontFamily.Monospace,
+                                                            fontSize = 7.5.sp,
+                                                            color = Color.LightGray
+                                                        )
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.height(8.dp))
+
+                                // Step 3 Visualizer: DHT erasure coding sharding
+                                erasureDurabilityReport?.let { report ->
+                                    Card(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .border(1.dp, darkBorder.copy(alpha = 0.5f), RoundedCornerShape(8.dp)),
+                                        colors = CardDefaults.cardColors(containerColor = Color(0xFF07070B))
+                                    ) {
+                                        Column(modifier = Modifier.padding(10.dp)) {
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Text(
+                                                    "DISTRIBUTED ERASURE DURABILITY (DHT)",
+                                                    fontFamily = FontFamily.Monospace,
+                                                    fontSize = 9.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = orangeAccent
+                                                )
+                                                Box(
+                                                    modifier = Modifier
+                                                        .clip(RoundedCornerShape(3.dp))
+                                                        .background(if (report.isGoalAchieved) neonGreen.copy(alpha = 0.15f) else orangeAccent.copy(alpha = 0.15f))
+                                                        .border(1.dp, if (report.isGoalAchieved) neonGreen else orangeAccent, RoundedCornerShape(3.dp))
+                                                        .padding(horizontal = 4.dp, vertical = 2.dp)
+                                                ) {
+                                                    Text(
+                                                        text = if (report.isGoalAchieved) "99.9% GOAL ACHIEVED" else "CRITICAL RISK",
+                                                        fontFamily = FontFamily.Monospace,
+                                                        fontSize = 7.5.sp,
+                                                        color = if (report.isGoalAchieved) neonGreen else orangeAccent
+                                                    )
+                                                }
+                                            }
+                                            Spacer(modifier = Modifier.height(6.dp))
+
+                                            Text(
+                                                text = "Binomial survival probability P(X >= k) with ${String.format("%.0f", (1f - (outageRate.toFloatOrNull() ?: 0.30f)) * 100f)}% node survival rate: ${String.format("%.6f", report.survivalProbability * 100f)}%",
+                                                fontFamily = FontFamily.Monospace,
+                                                fontSize = 8.sp,
+                                                color = Color.LightGray
+                                            )
+
+                                            Spacer(modifier = Modifier.height(6.dp))
+                                            Text(
+                                                "FRAGMENT STORAGE MAP:",
+                                                fontFamily = FontFamily.Monospace,
+                                                fontSize = 7.5.sp,
+                                                color = textMuted,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                            Spacer(modifier = Modifier.height(4.dp))
+
+                                            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                                report.fragments.forEach { frag ->
+                                                    Row(
+                                                        modifier = Modifier.fillMaxWidth(),
+                                                        horizontalArrangement = Arrangement.SpaceBetween
+                                                    ) {
+                                                        Text(
+                                                            "FRAG #${frag.index} (${if (frag.index < report.k) "DATA" else "PARITY"})",
+                                                            fontFamily = FontFamily.Monospace,
+                                                            fontSize = 7.5.sp,
+                                                            color = if (frag.index < report.k) neonCyan else orangeAccent
+                                                        )
+                                                        Text(
+                                                            "TARGET: ${frag.destinationNode.replace("NODE_", "")}",
+                                                            fontFamily = FontFamily.Monospace,
+                                                            fontSize = 7.5.sp,
+                                                            color = Color.LightGray
+                                                        )
+                                                        Text(
+                                                            "SHA-256: ${frag.fragmentHash}",
+                                                            fontFamily = FontFamily.Monospace,
+                                                            fontSize = 7.5.sp,
+                                                            color = textMuted
+                                                        )
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
+                                dhtReconstructionReport?.let { reconReport ->
+                                    Spacer(modifier = Modifier.height(10.dp))
+                                    Card(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .border(1.dp, darkBorder.copy(alpha = 0.5f), RoundedCornerShape(8.dp)),
+                                        colors = CardDefaults.cardColors(containerColor = Color(0xFF0A0A10))
+                                    ) {
+                                        Column(modifier = Modifier.padding(10.dp)) {
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Text(
+                                                    "DHT SHARD RECONSTRUCTION ROUTINE",
+                                                    fontFamily = FontFamily.Monospace,
+                                                    fontSize = 9.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = neonCyan
+                                                )
+                                                
+                                                val statusText = when {
+                                                    reconReport.isThresholdBreached && reconReport.isSuccessfullyReconstructed -> "RECOVERED VIA BROADCAST"
+                                                    reconReport.isThresholdBreached -> "BREACHED (RECONSTRUCTION FAILED)"
+                                                    else -> "NOMINAL (4-OF-6 SATISFIED)"
+                                                }
+                                                val statusColor = when {
+                                                    reconReport.isThresholdBreached && reconReport.isSuccessfullyReconstructed -> orangeAccent
+                                                    reconReport.isThresholdBreached -> Color.Red
+                                                    else -> neonGreen
+                                                }
+                                                Box(
+                                                    modifier = Modifier
+                                                        .clip(RoundedCornerShape(3.dp))
+                                                        .background(statusColor.copy(alpha = 0.15f))
+                                                        .border(1.dp, statusColor, RoundedCornerShape(3.dp))
+                                                        .padding(horizontal = 4.dp, vertical = 2.dp)
+                                                ) {
+                                                    Text(
+                                                        text = statusText,
+                                                        fontFamily = FontFamily.Monospace,
+                                                        fontSize = 7.5.sp,
+                                                        color = statusColor
+                                                    )
+                                                }
+                                            }
+                                            Spacer(modifier = Modifier.height(8.dp))
+                                            Text(
+                                                text = "Simulate individual node outages by toggling active shards. If count drops below the 4-of-6 minimum threshold, a high-priority broadcast mesh request automatically triggers to recover parity fragments.",
+                                                fontFamily = FontFamily.Monospace,
+                                                fontSize = 8.sp,
+                                                color = Color.LightGray,
+                                                lineHeight = 11.sp
+                                            )
+                                            Spacer(modifier = Modifier.height(10.dp))
+
+                                            // Interactive Shard Grid
+                                            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                                reconReport.shardStatuses.chunked(2).forEach { rowShards ->
+                                                    Row(
+                                                        modifier = Modifier.fillMaxWidth(),
+                                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                                    ) {
+                                                        rowShards.forEach { shard ->
+                                                            Row(
+                                                                modifier = Modifier
+                                                                    .weight(1f)
+                                                                    .background(Color(0xFF06060A), RoundedCornerShape(4.dp))
+                                                                    .border(1.dp, if (shard.isAvailable) darkBorder else Color.Red.copy(alpha = 0.3f), RoundedCornerShape(4.dp))
+                                                                    .padding(6.dp),
+                                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                                verticalAlignment = Alignment.CenterVertically
+                                                            ) {
+                                                                Column(modifier = Modifier.weight(1f)) {
+                                                                    Text(
+                                                                        "SHARD #${shard.shardIndex} (${if (shard.shardIndex < reconReport.minRequiredK) "DATA" else "PARITY"})",
+                                                                        fontFamily = FontFamily.Monospace,
+                                                                        fontSize = 8.sp,
+                                                                        color = if (shard.isAvailable) (if (shard.shardIndex < reconReport.minRequiredK) neonCyan else orangeAccent) else Color.Gray,
+                                                                        fontWeight = FontWeight.Bold
+                                                                    )
+                                                                    Text(
+                                                                        "NODE: ${shard.nodeAddress.replace("NODE_", "")}",
+                                                                        fontFamily = FontFamily.Monospace,
+                                                                        fontSize = 7.5.sp,
+                                                                        color = textMuted
+                                                                    )
+                                                                }
+                                                                
+                                                                Switch(
+                                                                    checked = shard.isAvailable,
+                                                                    onCheckedChange = { isChecked ->
+                                                                        viewModel.toggleShardAvailability(shard.shardIndex, isChecked, shardPayloadText)
+                                                                    },
+                                                                    modifier = Modifier.scale(0.6f).testTag("shard_switch_${shard.shardIndex}"),
+                                                                    colors = SwitchDefaults.colors(
+                                                                        checkedThumbColor = neonCyan,
+                                                                        checkedTrackColor = neonCyan.copy(alpha = 0.3f),
+                                                                        uncheckedThumbColor = Color.Gray,
+                                                                        uncheckedTrackColor = Color.DarkGray
+                                                                    )
+                                                                )
+                                                            }
+                                                        }
+                                                        if (rowShards.size < 2) {
+                                                            Spacer(modifier = Modifier.weight(1f))
+                                                        }
+                                                    }
+                                                }
+                                            }
+
+                                            Spacer(modifier = Modifier.height(10.dp))
+                                            Divider(color = darkBorder.copy(alpha = 0.5f))
+                                            Spacer(modifier = Modifier.height(10.dp))
+
+                                            // Reconstruction Metrics Display
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                            ) {
+                                                Column(modifier = Modifier.weight(1f)) {
+                                                    Text(
+                                                        "ACTIVE ONLINE SHARDS:",
+                                                        fontFamily = FontFamily.Monospace,
+                                                        fontSize = 7.5.sp,
+                                                        color = textMuted
+                                                    )
+                                                    Text(
+                                                        "${reconReport.activeShardCount} / ${reconReport.totalShards}",
+                                                        fontFamily = FontFamily.Monospace,
+                                                        fontSize = 12.sp,
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = if (reconReport.activeShardCount >= 4) neonGreen else orangeAccent
+                                                    )
+                                                }
+                                                Column(modifier = Modifier.weight(1.5f)) {
+                                                    Text(
+                                                        "RECONSTRUCTED PAYLOAD:",
+                                                        fontFamily = FontFamily.Monospace,
+                                                        fontSize = 7.5.sp,
+                                                        color = textMuted
+                                                    )
+                                                    Text(
+                                                        reconReport.reconstructedPayload ?: "N/A",
+                                                        fontFamily = FontFamily.Monospace,
+                                                        fontSize = 9.sp,
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = if (reconReport.isSuccessfullyReconstructed) Color.White else Color.Red,
+                                                        maxLines = 1,
+                                                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                                                    )
+                                                }
+                                            }
+
+                                            Spacer(modifier = Modifier.height(10.dp))
+                                            Text(
+                                                "RECONSTRUCTION PIPELINE LOGS:",
+                                                fontFamily = FontFamily.Monospace,
+                                                fontSize = 7.5.sp,
+                                                color = textMuted,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                            Spacer(modifier = Modifier.height(4.dp))
+                                            
+                                            Column(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .background(Color.Black, RoundedCornerShape(4.dp))
+                                                    .border(1.dp, darkBorder.copy(alpha = 0.3f), RoundedCornerShape(4.dp))
+                                                    .padding(6.dp)
+                                            ) {
+                                                reconReport.logs.forEach { logLine ->
+                                                    Text(
+                                                        text = logLine,
+                                                        fontFamily = FontFamily.Monospace,
+                                                        fontSize = 7.sp,
+                                                        color = if (logLine.contains("WARNING") || logLine.contains("ACTUATING")) orangeAccent else if (logLine.contains("SUCCESS") || logLine.contains("Restored")) neonGreen else if (logLine.contains("ERROR")) Color.Red else Color.LightGray,
+                                                        modifier = Modifier.padding(vertical = 1.dp)
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.height(10.dp))
+
+                                // Unified Offline Mesh Console Log
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .background(Color(0xFF07070B), RoundedCornerShape(6.dp))
+                                        .border(1.dp, darkBorder.copy(alpha = 0.6f), RoundedCornerShape(6.dp))
+                                        .padding(8.dp)
+                                ) {
+                                    Text(
+                                        "OFFLINE MESH PIPELINE CONSOLE (NODE 57):",
+                                        fontFamily = FontFamily.Monospace,
+                                        fontSize = 8.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = neonGreen
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    if (meshInfraLogs.isEmpty() && isMeshInfraRunning) {
+                                        Text(
+                                            "Awaiting pipeline initialization...",
+                                            fontFamily = FontFamily.Monospace,
+                                            fontSize = 8.5.sp,
+                                            color = Color.LightGray
+                                        )
+                                    } else {
+                                        meshInfraLogs.forEach { log ->
+                                            Text(
+                                                log,
+                                                fontFamily = FontFamily.Monospace,
+                                                fontSize = 8.5.sp,
+                                                color = if (log.contains("AODV_ERR") || log.contains("WARNING") || log.contains("FAILED") || log.contains("CRITICAL")) orangeAccent else if (log.contains("AODV_SUCCESS") || log.contains("SUCCESS") || log.contains("complete") || log.contains("VOM_TX")) neonGreen else Color.LightGray,
+                                                modifier = Modifier.padding(vertical = 1.dp)
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(20.dp))
+
+                    Text(
+                        text = "VIRTUAL SOVEREIGNTY & SYSTEM INVARIANTS (NODE 57)",
+                        style = TextStyle(
+                            fontFamily = FontFamily.Monospace,
+                            fontWeight = FontWeight.Bold,
+                            color = textMuted,
+                            fontSize = 11.sp,
+                            letterSpacing = 1.sp
+                        ),
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = TextAlign.Start
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    val isOffline = connectivityState is ConnectivityState.VirtualParityLoopback
+                    val localStateVal by viewModel.localAppState.collectAsStateWithLifecycle()
+                    val remoteStateVal by viewModel.remoteAppState.collectAsStateWithLifecycle()
+                    val reconciliationLogs by viewModel.reconciliationLog.collectAsStateWithLifecycle()
+
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .border(1.dp, darkBorder, RoundedCornerShape(12.dp)),
+                        colors = CardDefaults.cardColors(containerColor = cardBackground)
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            // Part A: Connectivity Header and Toggle
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column {
+                                    Text(
+                                        text = if (isOffline) "AUTONOMOUS SOVEREIGN" else "CONNECTED MESH",
+                                        style = TextStyle(
+                                            fontFamily = FontFamily.Monospace,
+                                            fontWeight = FontWeight.Bold,
+                                            color = if (isOffline) orangeAccent else neonGreen,
+                                            fontSize = 14.sp
+                                        )
+                                    )
+                                    Text(
+                                        text = "Protocol Node 57 • Virtual Parity Loopback",
+                                        style = TextStyle(
+                                            fontFamily = FontFamily.Monospace,
+                                            color = textMuted,
+                                            fontSize = 10.sp
+                                        )
+                                    )
+                                }
+
+                                Button(
+                                    onClick = { viewModel.toggleManualConnectivity(!isOffline) },
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = Color(0xFF14141E),
+                                        contentColor = Color.White
+                                    ),
+                                    shape = RoundedCornerShape(8.dp),
+                                    border = BorderStroke(1.dp, if (isOffline) orangeAccent.copy(alpha = 0.5f) else neonGreen.copy(alpha = 0.5f)),
+                                    modifier = Modifier.testTag("toggle_connectivity_button")
+                                ) {
+                                    Text(
+                                        text = if (isOffline) "ACTIVATE MESH" else "GO OFFLINE",
+                                        fontFamily = FontFamily.Monospace,
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            // Part B: The 15th Zamin Seal Keychain
+                            Text(
+                                text = "15TH ZAMIN SEAL KEYCHAIN MAPPING",
+                                style = TextStyle(
+                                    fontFamily = FontFamily.Monospace,
+                                    fontWeight = FontWeight.Bold,
+                                    color = textMuted,
+                                    fontSize = 10.sp
+                                )
+                            )
+                            Spacer(modifier = Modifier.height(6.dp))
+
+                            // Visual grid of 15 seals
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                (1..15).forEach { index ->
+                                    val is15th = index == 15
+                                    val sealColor = if (is15th) {
+                                        if (isOffline) orangeAccent else neonGreen
+                                    } else {
+                                        neonCyan
+                                    }
+                                    
+                                    Box(
+                                        modifier = Modifier
+                                            .size(width = 20.dp, height = 24.dp)
+                                            .clip(RoundedCornerShape(4.dp))
+                                            .background(Color(0xFF0F0F15))
+                                            .border(
+                                                width = 1.dp, 
+                                                color = sealColor.copy(alpha = if (is15th) 1f else 0.4f), 
+                                                shape = RoundedCornerShape(4.dp)
+                                            ),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = index.toString(),
+                                            style = TextStyle(
+                                                fontFamily = FontFamily.Monospace,
+                                                fontSize = 9.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = sealColor
+                                            )
+                                        )
+                                    }
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text(
+                                text = if (isOffline) {
+                                    "• 15th Zamin Seal [Mesh-Trust Vector]: LIT AMBER. Node running in Virtual Parity Loopback mode to secure local state DHT virtualization."
+                                } else {
+                                    "• 15th Zamin Seal [Mesh-Trust Vector]: LIT GREEN. Node fully aligned with mesh consensus. State baseline sync active."
+                                },
+                                style = TextStyle(
+                                    fontFamily = FontFamily.Monospace,
+                                    color = textMuted,
+                                    fontSize = 9.sp,
+                                    lineHeight = 12.sp
+                                )
+                            )
+
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Divider(color = darkBorder)
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            // Part C: Paradox Audit & State Reconciliation
+                            Text(
+                                text = "PARADOX AUDIT SYNTHESIS",
+                                style = TextStyle(
+                                    fontFamily = FontFamily.Monospace,
+                                    fontWeight = FontWeight.Bold,
+                                    color = textMuted,
+                                    fontSize = 10.sp
+                                )
+                            )
+                            Spacer(modifier = Modifier.height(6.dp))
+                            
+                            // Elegantly rendered Paradox Quote Block
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(Color(0xFF09090D))
+                                    .border(BorderStroke(1.dp, darkBorder), RoundedCornerShape(8.dp))
+                                    .padding(10.dp)
+                            ) {
+                                Text(
+                                    text = "\"The system is fully sovereign only when it is disconnected from the mesh, yet it only achieves full durability when it is connected to the mesh. We resolve this by virtualizing the mesh local loopback.\"",
+                                    style = TextStyle(
+                                        fontFamily = FontFamily.Monospace,
+                                        color = Color.LightGray,
+                                        fontSize = 11.sp,
+                                        lineHeight = 15.sp
+                                    )
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            // App States Grid
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                // Local State
+                                Card(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .border(1.dp, darkBorder, RoundedCornerShape(8.dp)),
+                                    colors = CardDefaults.cardColors(containerColor = Color(0xFF0C0C12))
+                                ) {
+                                    Column(modifier = Modifier.padding(10.dp)) {
+                                        Text(
+                                            text = "LOCAL NODE STATE",
+                                            style = TextStyle(fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, fontSize = 9.sp, color = neonCyan)
+                                        )
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Text(
+                                            text = "Payload: \"${localStateVal.data}\"",
+                                            style = TextStyle(fontFamily = FontFamily.Monospace, fontSize = 10.sp, color = Color.White)
+                                        )
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Text(
+                                            text = "Lamport T: ${localStateVal.version}",
+                                            style = TextStyle(fontFamily = FontFamily.Monospace, fontSize = 9.sp, color = textMuted)
+                                        )
+                                        Text(
+                                            text = "State Dirty: ${localStateVal.isDirty}",
+                                            style = TextStyle(fontFamily = FontFamily.Monospace, fontSize = 9.sp, color = if (localStateVal.isDirty) orangeAccent else textMuted)
+                                        )
+                                    }
+                                }
+
+                                // Remote State
+                                Card(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .border(1.dp, darkBorder, RoundedCornerShape(8.dp)),
+                                    colors = CardDefaults.cardColors(containerColor = Color(0xFF0C0C12))
+                                ) {
+                                    Column(modifier = Modifier.padding(10.dp)) {
+                                        Text(
+                                            text = "REMOTE MESH STATE",
+                                            style = TextStyle(fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, fontSize = 9.sp, color = neonGreen)
+                                        )
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Text(
+                                            text = "Baseline: \"${remoteStateVal.data}\"",
+                                            style = TextStyle(fontFamily = FontFamily.Monospace, fontSize = 10.sp, color = Color.White)
+                                        )
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Text(
+                                            text = "Lamport T: ${remoteStateVal.version}",
+                                            style = TextStyle(fontFamily = FontFamily.Monospace, fontSize = 9.sp, color = textMuted)
+                                        )
+                                        Text(
+                                            text = "Synced: ${!localStateVal.isDirty}",
+                                            style = TextStyle(fontFamily = FontFamily.Monospace, fontSize = 9.sp, color = if (!localStateVal.isDirty) neonGreen else textMuted)
+                                        )
+                                    }
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            // Input to mutate local state
+                            var localInputText by rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue("")) }
+                            val isConnected = systemMode is ConnectivityState.Connected
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                OutlinedTextField(
+                                    value = localInputText,
+                                    onValueChange = { localInputText = it },
+                                    enabled = isConnected,
+                                    placeholder = {
+                                        Text(
+                                            if (isConnected) "Mutate local node payload..." else "[DHT Locked: Safe Mode Active]",
+                                            fontFamily = FontFamily.Monospace,
+                                            fontSize = 11.sp,
+                                            color = textMuted
+                                        )
+                                    },
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .testTag("mutate_local_state_input"),
+                                    textStyle = TextStyle(fontFamily = FontFamily.Monospace, fontSize = 12.sp, color = if (isConnected) Color.White else textMuted),
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedBorderColor = neonCyan,
+                                        unfocusedBorderColor = darkBorder,
+                                        disabledBorderColor = darkBorder.copy(alpha = 0.3f),
+                                        cursorColor = neonCyan
+                                    ),
+                                    singleLine = true
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Button(
+                                    onClick = {
+                                        if (localInputText.text.isNotBlank()) {
+                                            viewModel.updateLocalStateData(localInputText.text)
+                                            localInputText = TextFieldValue("")
+                                        }
+                                    },
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = Color(0xFF14141E),
+                                        contentColor = Color.White,
+                                        disabledContainerColor = Color(0xFF0C0C12),
+                                        disabledContentColor = textMuted
+                                    ),
+                                    shape = RoundedCornerShape(8.dp),
+                                    border = BorderStroke(1.dp, if (isConnected) neonCyan.copy(alpha = 0.5f) else darkBorder),
+                                    enabled = isConnected && localInputText.text.isNotBlank(),
+                                    modifier = Modifier.testTag("mutate_state_submit_button")
+                                ) {
+                                    Text(
+                                        text = "MUTATE",
+                                        fontFamily = FontFamily.Monospace,
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(10.dp))
+
+                            // Sync Remote / Reconcile Button
+                            Button(
+                                onClick = { viewModel.reconcileStateWithMesh() },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color(0xFF0F2218),
+                                    contentColor = neonGreen,
+                                    disabledContainerColor = Color(0xFF0A0D0A),
+                                    disabledContentColor = textMuted
+                                ),
+                                shape = RoundedCornerShape(8.dp),
+                                border = BorderStroke(1.dp, if (isConnected) neonGreen.copy(alpha = 0.5f) else darkBorder),
+                                enabled = isConnected,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .testTag("reconcile_mesh_button")
+                            ) {
+                                Text(
+                                    text = "RECONCILE LOGICAL CLOCKS & DATA",
+                                    fontFamily = FontFamily.Monospace,
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            // Real-time Lamport/State Logs Terminal Window
+                            Text(
+                                text = "STATE DECOHERENCE RESOLUTION FEED",
+                                style = TextStyle(
+                                    fontFamily = FontFamily.Monospace,
+                                    fontWeight = FontWeight.Bold,
+                                    color = textMuted,
+                                    fontSize = 9.sp
+                                )
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(110.dp)
+                                    .background(Color(0xFF020204))
+                                    .border(1.dp, darkBorder, RoundedCornerShape(6.dp))
+                                    .padding(8.dp)
+                            ) {
+                                LazyColumn(
+                                    modifier = Modifier.fillMaxSize(),
+                                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    items(reconciliationLogs.reversed()) { logMsg ->
+                                        Text(
+                                            text = logMsg,
+                                            style = TextStyle(
+                                                fontFamily = FontFamily.Monospace,
+                                                fontSize = 9.5.sp,
+                                                color = if (logMsg.contains("DISCONNECT") || logMsg.contains("Dirty")) orangeAccent else Color.LightGray
+                                            )
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -1122,7 +2949,7 @@ fun SovereignDashboard(
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
-                            imageVector = Icons.Default.Build,
+                            imageVector = Icons.Default.TrendingUp,
                             contentDescription = "Metrics Icon",
                             tint = neonCyan,
                             modifier = Modifier.size(16.dp)
@@ -1219,7 +3046,7 @@ fun SovereignDashboard(
                     }
 
                     item {
-                        // High-tech D3 simulation active tracker
+                        // High-tech real-time hardware active tracker
                         Card(
                             shape = RoundedCornerShape(8.dp),
                             colors = CardDefaults.cardColors(containerColor = Color(0xFF0B0B0F)),
@@ -1228,7 +3055,7 @@ fun SovereignDashboard(
                         ) {
                             Column(modifier = Modifier.padding(10.dp)) {
                                 Text(
-                                    "D3 INTEGRITY LOG",
+                                    "REAL-TIME HARDWARE LOG",
                                     fontFamily = FontFamily.Monospace,
                                     fontSize = 8.5.sp,
                                     fontWeight = FontWeight.Bold,
@@ -1236,7 +3063,16 @@ fun SovereignDashboard(
                                 )
                                 Spacer(modifier = Modifier.height(6.dp))
                                 Text(
-                                    "• Gravity coefficient: 0.01\n• Node charge: -200\n• Tension: 0.04 (Spring)\n• Active threads: 1\n• Direct-hardware speed: 5.4GHz",
+                                    "• Host Device: $deviceModel\n" +
+                                    "• System Target: API $deviceSdk\n" +
+                                    "• JVM Heap Limit: ${String.format("%.1f", jvmMaxMemory)} MB\n" +
+                                    "• JVM Heap Used: ${String.format("%.1f", jvmAllocatedMemory)} MB\n" +
+                                    "• JVM Heap Free: ${String.format("%.1f", jvmFreeMemory)} MB\n" +
+                                    "• Disk Latency: ${String.format("%.3f", diskLatencyMs)} ms\n" +
+                                    "• JVM Active Threads: $activeThreadCount\n" +
+                                    "• System Uptime: ${systemUptime}s\n" +
+                                    "• State memory size: ${tetherBubbles.size} bubbles\n" +
+                                    "• Paradox Integrity: $paradoxIntegrity",
                                     fontFamily = FontFamily.Monospace,
                                     fontSize = 8.sp,
                                     color = Color.LightGray,

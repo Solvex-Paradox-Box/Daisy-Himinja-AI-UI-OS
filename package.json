@@ -6,6 +6,7 @@
   "scripts": {
     "build": "gradle assembleDebug",
     "compile": "gradle compileDebugSources",
+    "lint": "gradle lint",
     "test": "gradle :app:testDebugUnitTest",
     "verify-screenshots": "gradle :app:verifyRoborazziDebug",
     "record-screenshots": "gradle :app:recordRoborazziDebug",
