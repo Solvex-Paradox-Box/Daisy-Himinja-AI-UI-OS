@@ -1,0 +1,62 @@
+# Unpack any .zip at repo root and commit extracted contents back to main
+# This workflow runs on every push but will only perform the unpack step once.
+# It checks the head commit message and will skip if the commit message contains "[unpack-zip]" to avoid loops.
+name: Unpack Uploaded ZIP
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  unpack:
+    if: "!contains(github.event.head_commit.message, '[unpack-zip]')"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Find zip file
+        id: findzip
+        run: |
+          set -e
+          zipfile=$(ls *.zip 2>/dev/null | head -n 1 || true)
+          if [ -z "$zipfile" ]; then
+            echo "No zip files found in repo root, exiting"
+            echo "found=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          echo "found=true" >> $GITHUB_OUTPUT
+          echo "name=$zipfile" >> $GITHUB_OUTPUT
+
+      - name: Unpack zip
+        if: steps.findzip.outputs.found == 'true'
+        run: |
+          set -e
+          zipfile=${{ steps.findzip.outputs.name }}
+          mkdir unpack_temp
+          unzip -q "$zipfile" -d unpack_temp
+          # Move extracted files into repo root, preserving structure
+          shopt -s dotglob || true
+          mv unpack_temp/* . || true
+
+      - name: Commit extracted files
+        if: steps.findzip.outputs.found == 'true'
+        run: |
+          set -e
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          # Only commit if there are changes
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+          git commit -m "[unpack-zip] Unpacked uploaded ZIP into repository"
+          git push origin HEAD:main
