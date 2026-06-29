@@ -1,5 +1,5 @@
-Trigger file to run CI workflows
+Trigger file to run CI workflows (rsync update)
 
-This commit triggers workflows that run on push (Unpack Uploaded ZIP and Android CI Build).
+This commit updates the unpack workflow to use rsync and avoid interactive prompts.
 
-Trigger timestamp: 2026-06-29T12:12:00Z
+Timestamp: 2026-06-29T12:20:00Z

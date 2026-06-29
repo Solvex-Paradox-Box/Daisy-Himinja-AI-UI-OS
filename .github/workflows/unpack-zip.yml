@@ -2,8 +2,8 @@
 # Robust workflow that safely handles ZIP filenames with spaces, parentheses, and other special chars.
 # - Uses safe shell options (set -euo pipefail)
 # - Locates the first regular .zip file without using ls parsing
-# - Extracts to a temporary directory then copies files using cp -a to avoid mv interactive prompts
-# - Uses non-interactive git operations and retries push if needed to avoid CI races
+# - Extracts to a temporary directory then syncs files using rsync to avoid interactive prompts
+# - Commits only if there are changes
 name: Unpack Uploaded ZIP
 
 on:
@@ -52,9 +52,9 @@ jobs:
           mkdir -p unpack_temp
           unzip -q -- "$zipfile" -d unpack_temp
 
-          # Copy everything from unpack_temp safely (preserves dotfiles)
-          # Use cp -a to avoid interactive prompts that can be triggered by mv when replacing files
-          cp -a unpack_temp/. . || true
+          # Use rsync to copy extracted files into repo root without interactive prompts
+          # rsync preserves dotfiles and permissions and will not prompt on overwrite
+          rsync -a unpack_temp/ . || true
 
       - name: Commit extracted files
         if: steps.findzip.outputs.found == 'true'
