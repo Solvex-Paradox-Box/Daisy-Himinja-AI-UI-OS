@@ -1,0 +1,3 @@
+Trigger Android CI build (forced)
+
+This file is created to trigger workflows (assembleDebug) via push event.
