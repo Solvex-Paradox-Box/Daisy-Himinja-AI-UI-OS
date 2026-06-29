@@ -2,8 +2,8 @@
 # Robust workflow that safely handles ZIP filenames with spaces, parentheses, and other special chars.
 # - Uses safe shell options (set -euo pipefail)
 # - Locates the first regular .zip file without using ls parsing
-# - Extracts to a temporary directory then moves files individually to avoid glob expansion issues
-# - Commits only if there are changes
+# - Extracts to a temporary directory then copies files using cp -a to avoid mv interactive prompts
+# - Uses non-interactive git operations and retries push if needed to avoid CI races
 name: Unpack Uploaded ZIP
 
 on:
@@ -30,7 +30,6 @@ jobs:
         run: |
           set -euo pipefail
           zipfile=""
-          # Use a loop so filenames with special chars don't break the shell
           for f in *.zip; do
             if [ -f "$f" ]; then
               zipfile="$f"
@@ -51,27 +50,46 @@ jobs:
           set -euo pipefail
           zipfile="${{ steps.findzip.outputs.name }}"
           mkdir -p unpack_temp
-          # Quote the filename when unzipping to handle special characters
           unzip -q -- "$zipfile" -d unpack_temp
 
-          # Move extracted files into repo root safely; iterate to avoid glob expansion problems
-          shopt -s dotglob || true
-          for src in unpack_temp/*; do
-            [ -e "$src" ] || continue
-            mv -- "$src" . || true
-          done
+          # Copy everything from unpack_temp safely (preserves dotfiles)
+          # Use cp -a to avoid interactive prompts that can be triggered by mv when replacing files
+          cp -a unpack_temp/. . || true
 
       - name: Commit extracted files
         if: steps.findzip.outputs.found == 'true'
+        env:
+          GIT_TERMINAL_PROMPT: 0
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
           git add -A
           # Only commit if there are changes
           if git diff --cached --quiet; then
             echo "No changes to commit"
             exit 0
           fi
+
           git commit -m "[unpack-zip] Unpacked uploaded ZIP into repository"
-          git push origin HEAD:main
+
+          # Ensure we integrate any remote updates to avoid non-fast-forward errors
+          git fetch origin main
+          git rebase --autostash origin/main || true
+
+          # Try pushing up to 3 times if necessary
+          for i in 1 2 3; do
+            if git push origin HEAD:main; then
+              echo "Push succeeded"
+              exit 0
+            else
+              echo "Push failed (attempt $i), fetching remote and retrying"
+              git fetch origin main
+              git rebase --autostash origin/main || true
+              sleep 1
+            fi
+          done
+
+          echo "Push failed after retries"
+          exit 1
