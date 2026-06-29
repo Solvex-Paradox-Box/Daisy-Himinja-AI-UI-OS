@@ -1,9 +1,3 @@
-# Unpack any .zip at repo root and commit extracted contents back to main
-# Robust workflow that safely handles ZIP filenames with spaces, parentheses, and other special chars.
-# - Uses safe shell options (set -euo pipefail)
-# - Locates the first regular .zip file without using ls parsing
-# - Extracts to a temporary directory then syncs files using rsync to avoid interactive prompts
-# - Commits only if there are changes
 name: Unpack Uploaded ZIP
 
 on:
@@ -44,17 +38,18 @@ jobs:
           echo "found=true" >> $GITHUB_OUTPUT
           echo "name=${zipfile}" >> $GITHUB_OUTPUT
 
-      - name: Unpack zip
+      - name: Unpack zip (non-interactive)
         if: steps.findzip.outputs.found == 'true'
         run: |
           set -euo pipefail
           zipfile="${{ steps.findzip.outputs.name }}"
           mkdir -p unpack_temp
-          unzip -q -- "$zipfile" -d unpack_temp
+          # Use unzip -o to overwrite existing files without prompting, and quote filename
+          unzip -q -o -- "$zipfile" -d unpack_temp
 
-          # Use rsync to copy extracted files into repo root without interactive prompts
-          # rsync preserves dotfiles and permissions and will not prompt on overwrite
-          rsync -a unpack_temp/ . || true
+          # Use a tar pipeline to copy contents from unpack_temp into repo root non-interactively
+          # This preserves permissions and handles dotfiles without prompting
+          tar -C unpack_temp -cf - . | tar -C . -xpf -
 
       - name: Commit extracted files
         if: steps.findzip.outputs.found == 'true'
