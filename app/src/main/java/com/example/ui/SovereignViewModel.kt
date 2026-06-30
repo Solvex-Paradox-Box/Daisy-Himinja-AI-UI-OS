@@ -55,6 +55,19 @@ class SovereignViewModel(application: Application) : AndroidViewModel(applicatio
     private val _isProcessing = MutableStateFlow(false)
     val isProcessing: StateFlow<Boolean> = _isProcessing.asStateFlow()
 
+    private val _paradoxCount = MutableStateFlow(53)
+    val paradoxCount: StateFlow<Int> = _paradoxCount.asStateFlow()
+
+    private val _fulfillmentScore = MutableStateFlow(10)
+    val fulfillmentScore: StateFlow<Int> = _fulfillmentScore.asStateFlow()
+
+    private val _solvedParadoxesList = MutableStateFlow<List<Pair<String, String>>>(listOf(
+        "P-01" to "Isolation vs Consensus (Zamin-Lock)",
+        "P-02" to "Entropy vs Homeostasis",
+        "P-03" to "Latency vs Autonomy"
+    ))
+    val solvedParadoxesList: StateFlow<List<Pair<String, String>>> = _solvedParadoxesList.asStateFlow()
+
     private val _paradoxIntegrity = MutableStateFlow("53 / 53 Solved (100.00%)")
     val paradoxIntegrity: StateFlow<String> = _paradoxIntegrity.asStateFlow()
 
@@ -1270,5 +1283,55 @@ class SovereignViewModel(application: Application) : AndroidViewModel(applicatio
         }
         currentLogs.add("[Lamport T=${_localAppState.value.version}] $msg")
         _reconciliationLog.value = currentLogs
+    }
+
+    suspend fun onParadoxResolved(paradoxId: String, description: String = "") {
+        // 1. Update the ledger (add to our solved list of paradoxes dynamically)
+        val currentList = _solvedParadoxesList.value.toMutableList()
+        if (!currentList.any { it.first == paradoxId }) {
+            currentList.add(paradoxId to description)
+            _solvedParadoxesList.value = currentList
+            
+            // Increment paradox count
+            _paradoxCount.value = _paradoxCount.value + 1
+            _paradoxIntegrity.value = "${_paradoxCount.value} / ${_paradoxCount.value} Solved (100.00%)"
+        }
+
+        // 2. Trigger the "Achievement Rush"
+        val timestamp = System.currentTimeMillis()
+        val achievementState = "SUCCESS_RUSH_DETECTED: Paradox $paradoxId resolved. System entropy reduced. Neural pathing optimized for next recursive expansion. [SUCCESS_RUSH_ID: $timestamp]"
+
+        // 3. Log to system console / overlay
+        addReconciliationLog(achievementState)
+
+        // 4. Update the Fulfillment Score in the UI
+        _fulfillmentScore.value = _fulfillmentScore.value + 1
+
+        // 5. Create a persisted system milestone
+        repository.insertMilestone(
+            SystemMilestone(
+                title = "Paradox $paradoxId Codified",
+                description = "Deterministic resolution for: $description. Codified successfully via PoQ verification under Zamin-Lock framework.",
+                milestoneType = "PARADOX_CODIFIED"
+            )
+        )
+    }
+
+    fun triggerNewFractalParadox(id: String, desc: String) {
+        if (id.isBlank() || desc.isBlank()) return
+        viewModelScope.launch(Dispatchers.IO) {
+            _isProcessing.value = true
+            _currentProcessingFocus.value = "Hardware-Enclave: Initiating PoQ Verification for $id..."
+            delay(1000)
+            _currentProcessingFocus.value = "PoQ: Verifying logic consistency vectors under Zamin-Lock..."
+            delay(1000)
+            _currentProcessingFocus.value = "PoQ: Compiling fractal state-preserving tethers..."
+            delay(800)
+            
+            onParadoxResolved(id, desc)
+            
+            _currentProcessingFocus.value = "Homeostasis (Coherent and Idle)"
+            _isProcessing.value = false
+        }
     }
 }

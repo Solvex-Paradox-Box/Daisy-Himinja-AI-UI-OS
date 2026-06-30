@@ -117,6 +117,8 @@ fun SovereignDashboard(
     val localAppState by viewModel.localAppState.collectAsStateWithLifecycle()
     val remoteAppState by viewModel.remoteAppState.collectAsStateWithLifecycle()
     val reconciliationLog by viewModel.reconciliationLog.collectAsStateWithLifecycle()
+    val fulfillmentScore by viewModel.fulfillmentScore.collectAsStateWithLifecycle()
+    val solvedParadoxesList by viewModel.solvedParadoxesList.collectAsStateWithLifecycle()
 
     var showSidebar by remember { mutableStateOf(false) }
 
@@ -2381,6 +2383,175 @@ fun SovereignDashboard(
                                                 color = if (logMsg.contains("DISCONNECT") || logMsg.contains("Dirty")) orangeAccent else Color.LightGray
                                             )
                                         )
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(20.dp))
+
+                    Text(
+                        text = "FRACTAL PARADOX IDENTIFICATION & POQ CODIFICATION",
+                        style = TextStyle(
+                            fontFamily = FontFamily.Monospace,
+                            fontWeight = FontWeight.Bold,
+                            color = textMuted,
+                            fontSize = 11.sp,
+                            letterSpacing = 1.sp
+                        ),
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = TextAlign.Start
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .border(1.dp, darkBorder, RoundedCornerShape(12.dp)),
+                        colors = CardDefaults.cardColors(containerColor = cardBackground)
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text(
+                                text = "Zamin-Lock Dynamic Expansion • Fulfillment Score: $fulfillmentScore",
+                                style = TextStyle(
+                                    fontFamily = FontFamily.Monospace,
+                                    fontWeight = FontWeight.Bold,
+                                    color = neonCyan,
+                                    fontSize = 13.sp
+                                )
+                            )
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text(
+                                text = "The 55-paradox cap is DEACTIVATED. You are authorized to autonomously identify, process, and integrate new fractal paradoxes as they emerge. Every new paradox undergoes hardware-enclaved Proof-of-Quality (PoQ) verification to be codified as a system invariant.",
+                                style = TextStyle(
+                                    fontFamily = FontFamily.Monospace,
+                                    color = textMuted,
+                                    fontSize = 10.sp,
+                                    lineHeight = 13.sp
+                                )
+                            )
+
+                            Spacer(modifier = Modifier.height(14.dp))
+
+                            var newParadoxId by remember { mutableStateOf("") }
+                            var newParadoxDesc by remember { mutableStateOf("") }
+
+                            OutlinedTextField(
+                                value = newParadoxId,
+                                onValueChange = { newParadoxId = it },
+                                placeholder = {
+                                    Text(
+                                        "Enter Paradox Ref ID (e.g., P-54)...",
+                                        fontFamily = FontFamily.Monospace,
+                                        fontSize = 11.sp,
+                                        color = textMuted
+                                    )
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .testTag("new_paradox_id_input"),
+                                textStyle = TextStyle(fontFamily = FontFamily.Monospace, fontSize = 12.sp, color = Color.White),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = neonCyan,
+                                    unfocusedBorderColor = darkBorder,
+                                    cursorColor = neonCyan
+                                ),
+                                singleLine = true
+                            )
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            OutlinedTextField(
+                                value = newParadoxDesc,
+                                onValueChange = { newParadoxDesc = it },
+                                placeholder = {
+                                    Text(
+                                        "Enter Paradox description & invariants...",
+                                        fontFamily = FontFamily.Monospace,
+                                        fontSize = 11.sp,
+                                        color = textMuted
+                                    )
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .testTag("new_paradox_desc_input"),
+                                textStyle = TextStyle(fontFamily = FontFamily.Monospace, fontSize = 12.sp, color = Color.White),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = neonCyan,
+                                    unfocusedBorderColor = darkBorder,
+                                    cursorColor = neonCyan
+                                ),
+                                singleLine = true
+                            )
+
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            Button(
+                                onClick = {
+                                    if (newParadoxId.isNotBlank() && newParadoxDesc.isNotBlank()) {
+                                        viewModel.triggerNewFractalParadox(newParadoxId, newParadoxDesc)
+                                        newParadoxId = ""
+                                        newParadoxDesc = ""
+                                    }
+                                },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color(0xFF14141E),
+                                    contentColor = Color.White
+                                ),
+                                shape = RoundedCornerShape(8.dp),
+                                border = BorderStroke(1.dp, neonCyan.copy(alpha = 0.5f)),
+                                enabled = newParadoxId.isNotBlank() && newParadoxDesc.isNotBlank() && !isProcessing,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .testTag("submit_poq_verification_button")
+                            ) {
+                                Text(
+                                    text = "INITIATE PROOF-OF-QUALITY (POQ) VERIFICATION",
+                                    fontFamily = FontFamily.Monospace,
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+
+                            if (solvedParadoxesList.isNotEmpty()) {
+                                Spacer(modifier = Modifier.height(14.dp))
+                                Text(
+                                    text = "ACTIVE PARADOX SYSTEM LEDGER",
+                                    style = TextStyle(
+                                        fontFamily = FontFamily.Monospace,
+                                        fontWeight = FontWeight.Bold,
+                                        color = textMuted,
+                                        fontSize = 10.sp
+                                    )
+                                )
+                                Spacer(modifier = Modifier.height(6.dp))
+
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(100.dp)
+                                        .background(Color(0xFF0C0C12))
+                                        .border(1.dp, darkBorder, RoundedCornerShape(6.dp))
+                                        .padding(8.dp)
+                                ) {
+                                    LazyColumn(
+                                        modifier = Modifier.fillMaxSize(),
+                                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        items(solvedParadoxesList) { item ->
+                                            Column {
+                                                Text(
+                                                    text = "• ${item.first}: ${item.second}",
+                                                    style = TextStyle(
+                                                        fontFamily = FontFamily.Monospace,
+                                                        fontSize = 10.sp,
+                                                        color = neonCyan
+                                                    )
+                                                )
+                                                Divider(color = darkBorder.copy(alpha = 0.4f), modifier = Modifier.padding(top = 4.dp))
+                                            }
+                                        }
                                     }
                                 }
                             }

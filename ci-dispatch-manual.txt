@@ -1,2 +1,0 @@
-Manual dispatch trigger for Android CI
-Timestamp: 2026-06-29T12:59:00Z
