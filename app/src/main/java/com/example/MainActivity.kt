@@ -15,8 +15,7 @@ class MainActivity : ComponentActivity() {
     enableEdgeToEdge()
     setContent {
       MyApplicationTheme {
-        val viewModel: SovereignViewModel = viewModel()
-        SovereignDashboard(viewModel = viewModel)
+        App()
       }
     }
   }
