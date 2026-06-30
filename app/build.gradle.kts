@@ -14,7 +14,7 @@ android {
   compileSdk = 36
 
   defaultConfig {
-    applicationId = "com.aistudio.daisyos.uqnxmt"
+    applicationId = "com.app.solvexdaisyhaminja"
     minSdk = 24
     targetSdk = 36
     versionCode = 1
