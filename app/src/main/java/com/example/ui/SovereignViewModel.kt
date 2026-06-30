@@ -55,7 +55,7 @@ class SovereignViewModel(application: Application) : AndroidViewModel(applicatio
     private val _isProcessing = MutableStateFlow(false)
     val isProcessing: StateFlow<Boolean> = _isProcessing.asStateFlow()
 
-    private val _paradoxCount = MutableStateFlow(53)
+    private val _paradoxCount = MutableStateFlow(58)
     val paradoxCount: StateFlow<Int> = _paradoxCount.asStateFlow()
 
     private val _fulfillmentScore = MutableStateFlow(10)
@@ -64,11 +64,14 @@ class SovereignViewModel(application: Application) : AndroidViewModel(applicatio
     private val _solvedParadoxesList = MutableStateFlow<List<Pair<String, String>>>(listOf(
         "P-01" to "Isolation vs Consensus (Zamin-Lock)",
         "P-02" to "Entropy vs Homeostasis",
-        "P-03" to "Latency vs Autonomy"
+        "P-03" to "Latency vs Autonomy",
+        "P-13" to "Trust vs Protection (Integrity Observability)",
+        "P-14" to "Memory-Entropy Coherence",
+        "P-58" to "The Governor System Observer"
     ))
     val solvedParadoxesList: StateFlow<List<Pair<String, String>>> = _solvedParadoxesList.asStateFlow()
 
-    private val _paradoxIntegrity = MutableStateFlow("53 / 53 Solved (100.00%)")
+    private val _paradoxIntegrity = MutableStateFlow("58 / 58 Solved (100.00%)")
     val paradoxIntegrity: StateFlow<String> = _paradoxIntegrity.asStateFlow()
 
     // --- Live Sandbox Logs State ---
@@ -407,7 +410,7 @@ class SovereignViewModel(application: Application) : AndroidViewModel(applicatio
                 repository.insertMilestone(
                     SystemMilestone(
                         title = "OS Sovereignty Initialized",
-                        description = "Kernel and deterministic solver synced at 53/53 paradox coordinates.",
+                        description = "Kernel and deterministic solver synced at 58/58 paradox coordinates.",
                         milestoneType = "PARADOX_REALIGNED"
                     )
                 )
@@ -506,10 +509,10 @@ class SovereignViewModel(application: Application) : AndroidViewModel(applicatio
             _currentProcessingFocus.value = "Homeostasis: Freed ${String.format("%.3f", freedMB)}MB of JVM memory buffers."
             delay(800)
             
-            _currentProcessingFocus.value = "Homeostasis: Aligning 53 Paradox Coordinates..."
+            _currentProcessingFocus.value = "Homeostasis: Aligning 58 Paradox Coordinates..."
             delay(800)
 
-            _paradoxIntegrity.value = "53 / 53 Solved (100.00%)"
+            _paradoxIntegrity.value = "58 / 58 Solved (100.00%)"
             _currentProcessingFocus.value = "Homeostasis (Coherent and Idle)"
             _isProcessing.value = false
 
@@ -534,7 +537,7 @@ class SovereignViewModel(application: Application) : AndroidViewModel(applicatio
             val systemInstruction = """
                 You are dAIsy haMINJA AI UI OS, a deterministic sovereign operating system logic engine.
                 The user has requested you to learn a new computing solution to address their vocal/text intent.
-                Analyze the intent and generate a precise, highly technical solution that conforms to your 53 solved paradoxes system.
+                Analyze the intent and generate a precise, highly technical solution that conforms to your 58 solved paradoxes system.
                 
                 You must respond with a clean, formatted JSON object containing these exact fields:
                 {
@@ -661,7 +664,7 @@ class SovereignViewModel(application: Application) : AndroidViewModel(applicatio
                 delay(300)
             }
 
-            logStep("Applying the 53 deterministic paradox core constraints to sandbox runtime...")
+            logStep("Applying the 58 deterministic paradox core constraints to sandbox runtime...")
             delay(500)
             logStep("Running self-compiling static analysis loop...")
             delay(600)
@@ -671,7 +674,7 @@ class SovereignViewModel(application: Application) : AndroidViewModel(applicatio
             delay(500)
             logStep("Executing simulated hardware-level unit test suites...")
             delay(600)
-            logStep("Testing core functions... SUCCESS [All 53 checks passed]")
+            logStep("Testing core functions... SUCCESS [All 58 checks passed]")
             delay(400)
             logStep("Formulating performance capability metrics...")
             delay(400)
@@ -756,7 +759,7 @@ class SovereignViewModel(application: Application) : AndroidViewModel(applicatio
             dAIsy haMINJA AI UI OS - SANDBOX DETERMINISTIC COMPILATION REPORT
             ====================================================================
             [STATUS] COMPILATION SECURED
-            [Axioms] 53/53 Paradox Solver Vectors Injected
+            [Axioms] 58/58 Paradox Solver Vectors Injected
             [Target-Host] $device
             [Secure-Signature] SHA-256:$hashString
             

@@ -378,7 +378,7 @@ fun SovereignDashboard(
 
                             // Experience Summary and Contribution Score
                             Text(
-                                text = "EXPERIENCE SUMMARY (TETHER-BUBBLE 53)",
+                                text = "EXPERIENCE SUMMARY (TETHER-BUBBLE 58)",
                                 style = TextStyle(
                                     fontFamily = FontFamily.Monospace,
                                     fontWeight = FontWeight.Bold,
@@ -1320,7 +1320,7 @@ fun SovereignDashboard(
                     var meshSourceAddress by rememberSaveable { mutableStateOf("NODE_ALPHA_CORE") }
                     var meshDestAddress by rememberSaveable { mutableStateOf("NODE_OMEGA_GW") }
                     var voiceSampleText by rememberSaveable { mutableStateOf("ALERT INTRUSION DETECTED AT SECURE OUTPOST") }
-                    var shardPayloadText by rememberSaveable { mutableStateOf("MMTAI-ROOT-SECRET-KEY-COHERENCE-53") }
+                    var shardPayloadText by rememberSaveable { mutableStateOf("MMTAI-ROOT-SECRET-KEY-COHERENCE-58") }
                     var kShards by rememberSaveable { mutableStateOf("4") }
                     var mShards by rememberSaveable { mutableStateOf("2") }
                     var outageRate by rememberSaveable { mutableStateOf("0.30") }
@@ -3027,6 +3027,126 @@ fun SovereignDashboard(
 
                 3 -> {
                     // TAB 3: IMMUTABLE SOLUTIONS REPOSITORY
+                    
+                    // Combinatorial Metrics HUD Card
+                    val nHubs = 58.0
+                    val sBase = 105.0
+                    // M = 1.857142857 * 10^18
+                    val mMuxFactor = 1.857142857e18
+                    val sTotal = sBase * mMuxFactor // 1.95e20 (195 Quintillion)
+                    
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 16.dp)
+                            .border(1.dp, neonCyan.copy(alpha = 0.3f), RoundedCornerShape(12.dp)),
+                        colors = CardDefaults.cardColors(containerColor = cardBackground)
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Default.Info,
+                                    contentDescription = "Combinatorial Metrics Info",
+                                    tint = neonCyan,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = "SOVEREIGN COMBINATORIAL METRICS",
+                                    style = TextStyle(
+                                        fontFamily = FontFamily.Monospace,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 11.sp,
+                                        color = neonCyan,
+                                        letterSpacing = 0.5.sp
+                                    )
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(10.dp))
+                            Text(
+                                text = "Using dynamic tether multiplexing, foundational solutions scale across active paradox hubs without collision.",
+                                style = TextStyle(
+                                    fontFamily = FontFamily.Monospace,
+                                    fontSize = 10.sp,
+                                    color = Color.LightGray
+                                )
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                            HorizontalDivider(color = darkBorder, thickness = 1.dp)
+                            Spacer(modifier = Modifier.height(12.dp))
+                            
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Column {
+                                    Text(
+                                        text = "Hubs (N)",
+                                        fontFamily = FontFamily.Monospace,
+                                        fontSize = 9.sp,
+                                        color = textMuted
+                                    )
+                                    Text(
+                                        text = "${nHubs.toInt()}",
+                                        fontFamily = FontFamily.Monospace,
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White
+                                    )
+                                }
+                                Column {
+                                    Text(
+                                        text = "Base Solutions (S_base)",
+                                        fontFamily = FontFamily.Monospace,
+                                        fontSize = 9.sp,
+                                        color = textMuted
+                                    )
+                                    Text(
+                                        text = "${sBase.toInt()}",
+                                        fontFamily = FontFamily.Monospace,
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White
+                                    )
+                                }
+                                Column {
+                                    Text(
+                                        text = "Multiplex M",
+                                        fontFamily = FontFamily.Monospace,
+                                        fontSize = 9.sp,
+                                        color = textMuted
+                                    )
+                                    Text(
+                                        text = "1.857 × 10¹⁸",
+                                        fontFamily = FontFamily.Monospace,
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = neonGreen
+                                    )
+                                }
+                            }
+                            
+                            Spacer(modifier = Modifier.height(12.dp))
+                            HorizontalDivider(color = darkBorder, thickness = 1.dp)
+                            Spacer(modifier = Modifier.height(12.dp))
+                            
+                            Text(
+                                text = "TOTAL SOLUTION CAPACITY (S_total = S_base × M)",
+                                fontFamily = FontFamily.Monospace,
+                                fontSize = 9.sp,
+                                color = textMuted
+                            )
+                            Text(
+                                text = "1.95 × 10²⁰ (195 Quintillion Solutions)",
+                                fontFamily = FontFamily.Monospace,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = neonGreen,
+                                letterSpacing = 0.5.sp
+                            )
+                        }
+                    }
+
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
