@@ -38,6 +38,8 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.IntOffset
+import kotlin.math.roundToInt
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.R
 import androidx.compose.ui.layout.ContentScale
@@ -47,6 +49,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import com.example.data.model.ConnectivityState
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
@@ -54,6 +57,9 @@ import androidx.compose.ui.draw.shadow
 import com.example.data.model.SovereignSolution
 import com.example.data.model.SystemMilestone
 import com.example.data.model.TetherBubble
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import android.content.Intent
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -73,6 +79,7 @@ fun SovereignDashboard(
     val paradoxIntegrity by viewModel.paradoxIntegrity.collectAsStateWithLifecycle()
     val sandboxLogs by viewModel.sandboxLogs.collectAsStateWithLifecycle()
     val sandboxReport by viewModel.sandboxCompletedReport.collectAsStateWithLifecycle()
+    val sandboxFilesList by viewModel.sandboxFilesList.collectAsStateWithLifecycle()
 
     val isBiometricScanning by viewModel.isBiometricScanning.collectAsStateWithLifecycle()
     val biometricStatus by viewModel.biometricStatus.collectAsStateWithLifecycle()
@@ -83,6 +90,8 @@ fun SovereignDashboard(
 
     val efficiencyHistory by viewModel.efficiencyHistory.collectAsStateWithLifecycle()
     val throughputHistory by viewModel.throughputHistory.collectAsStateWithLifecycle()
+    val stateMemoryRetentionHistory by viewModel.stateMemoryRetentionHistory.collectAsStateWithLifecycle()
+    val currentRetention by viewModel.currentRetention.collectAsStateWithLifecycle()
 
     val activeThreadCount by viewModel.activeThreadCount.collectAsStateWithLifecycle()
     val jvmAllocatedMemory by viewModel.jvmAllocatedMemory.collectAsStateWithLifecycle()
@@ -125,6 +134,29 @@ fun SovereignDashboard(
     // Screen tab selection state
     var selectedTab by rememberSaveable { mutableStateOf(0) }
     val tabTitles = listOf("SYSTEM CORE", "TETHER FIELD", "SANDBOX", "SOLUTIONS")
+
+    // Local File Sync SAF Intent Launcher
+    var selectedFileToExport by remember { mutableStateOf<java.io.File?>(null) }
+    val createDocumentLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("text/plain")
+    ) { uri ->
+        uri?.let { destinationUri ->
+            selectedFileToExport?.let { file ->
+                try {
+                    context.contentResolver.openOutputStream(destinationUri)?.use { outputStream ->
+                        file.inputStream().use { inputStream ->
+                            inputStream.copyTo(outputStream)
+                        }
+                    }
+                    Toast.makeText(context, "Exported ${file.name} successfully!", Toast.LENGTH_SHORT).show()
+                    viewModel.addReconciliationLog("[FILE_SYNC] Exported ${file.name} to shared folder successfully.")
+                } catch (e: Exception) {
+                    Toast.makeText(context, "Export failed: ${e.message}", Toast.LENGTH_SHORT).show()
+                    viewModel.addReconciliationLog("[FILE_SYNC_ERROR] Export failed for ${file.name}: ${e.message}")
+                }
+            }
+        }
+    }
 
     // Terminal Inputs
     var textToTether by rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue("")) }
@@ -2745,6 +2777,14 @@ fun SovereignDashboard(
 
                     Spacer(modifier = Modifier.height(20.dp))
 
+                    RechartsRetentionWidget(
+                        data = stateMemoryRetentionHistory,
+                        currentVal = currentRetention,
+                        tetherBubblesCount = tetherBubbles.size
+                    )
+
+                    Spacer(modifier = Modifier.height(20.dp))
+
                     // Active Bubbles Field Grid
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -3021,6 +3061,256 @@ fun SovereignDashboard(
                                 fontSize = 11.sp,
                                 lineHeight = 15.sp
                             )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    // Local File Sync Section
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .border(1.dp, darkBorder, RoundedCornerShape(12.dp)),
+                        colors = CardDefaults.cardColors(containerColor = cardBackground)
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            // Header
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        imageVector = Icons.Default.Refresh,
+                                        contentDescription = "Sync",
+                                        tint = neonGreen,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = "LOCAL FILE SYNC ENGINE",
+                                        fontFamily = FontFamily.Monospace,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White,
+                                        fontSize = 13.sp,
+                                        letterSpacing = 1.sp
+                                    )
+                                }
+                                
+                                IconButton(
+                                    onClick = { 
+                                        viewModel.loadSandboxFiles()
+                                        Toast.makeText(context, "Scanned and refreshed storage", Toast.LENGTH_SHORT).show()
+                                    },
+                                    modifier = Modifier.size(24.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Refresh,
+                                        contentDescription = "Refresh File Index",
+                                        tint = neonCyan,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                }
+                            }
+                            
+                            Spacer(modifier = Modifier.height(8.dp))
+                            
+                            Text(
+                                text = "Export sandbox-compiled binaries and solution blueprints directly to your device's external shared directories (Downloads, Documents) using the Android File Intent SAF API.",
+                                style = TextStyle(
+                                    color = textMuted,
+                                    fontSize = 11.sp,
+                                    lineHeight = 15.sp
+                                )
+                            )
+                            
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            // Action to manually save current report with a custom name
+                            if (sandboxReport != null) {
+                                var customFileName by remember { mutableStateOf("") }
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    OutlinedTextField(
+                                        value = customFileName,
+                                        onValueChange = { customFileName = it },
+                                        placeholder = { Text("blueprint_name", fontSize = 11.sp, color = textMuted) },
+                                        singleLine = true,
+                                        textStyle = TextStyle(fontFamily = FontFamily.Monospace, fontSize = 11.sp, color = Color.White),
+                                        colors = OutlinedTextFieldDefaults.colors(
+                                            focusedBorderColor = neonCyan,
+                                            unfocusedBorderColor = darkBorder,
+                                            focusedTextColor = Color.White,
+                                            unfocusedTextColor = Color.White
+                                        ),
+                                        modifier = Modifier
+                                            .weight(1.0f)
+                                            .height(48.dp)
+                                            .padding(end = 8.dp)
+                                    )
+                                    Button(
+                                        onClick = {
+                                            if (customFileName.isNotBlank()) {
+                                                viewModel.saveCompiledBlueprintToFile(sandboxReport!!, customFileName)
+                                                customFileName = ""
+                                                Toast.makeText(context, "Saved locally!", Toast.LENGTH_SHORT).show()
+                                            } else {
+                                                Toast.makeText(context, "Enter a filename first", Toast.LENGTH_SHORT).show()
+                                            }
+                                        },
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = neonCyan,
+                                            contentColor = Color.Black
+                                        ),
+                                        shape = RoundedCornerShape(8.dp),
+                                        modifier = Modifier.height(48.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Add,
+                                            contentDescription = "Save file",
+                                            modifier = Modifier.size(14.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text("SAVE FILE", fontFamily = FontFamily.Monospace, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                    }
+                                }
+                                Spacer(modifier = Modifier.height(16.dp))
+                            }
+
+                            // Files list
+                            Text(
+                                text = "LOCAL SANDBOX BINARIES INDEX (${sandboxFilesList.size} FILES)",
+                                style = TextStyle(
+                                    fontFamily = FontFamily.Monospace,
+                                    fontWeight = FontWeight.Bold,
+                                    color = orangeAccent,
+                                    fontSize = 10.sp,
+                                    letterSpacing = 0.5.sp
+                                )
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            if (sandboxFilesList.isEmpty()) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .border(1.dp, darkBorder, RoundedCornerShape(8.dp))
+                                        .background(Color(0xFF020204))
+                                        .padding(16.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = "No local binaries compiled yet.\nSelect tethers above and run compile.",
+                                        fontFamily = FontFamily.Monospace,
+                                        color = textMuted,
+                                        fontSize = 11.sp,
+                                        textAlign = TextAlign.Center
+                                    )
+                                }
+                            } else {
+                                Column(
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    sandboxFilesList.forEach { file ->
+                                        val fileSizeKb = "%.2f KB".format(file.length() / 1024.0)
+                                        val lastModifiedStr = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.getDefault()).format(java.util.Date(file.lastModified()))
+                                        
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .border(1.dp, darkBorder, RoundedCornerShape(8.dp))
+                                                .background(Color(0xFF020204))
+                                                .padding(8.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Info,
+                                                contentDescription = "Binary File",
+                                                tint = neonGreen,
+                                                modifier = Modifier.size(20.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Column(modifier = Modifier.weight(1f)) {
+                                                Text(
+                                                    text = file.name,
+                                                    fontFamily = FontFamily.Monospace,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = Color.White,
+                                                    fontSize = 11.sp,
+                                                    maxLines = 1
+                                                )
+                                                Text(
+                                                    text = "$fileSizeKb | $lastModifiedStr",
+                                                    fontFamily = FontFamily.Monospace,
+                                                    color = textMuted,
+                                                    fontSize = 9.5.sp
+                                                )
+                                            }
+                                            
+                                            // Action Buttons
+                                            Row {
+                                                // 1. INTENT EXPORT (ACTION_CREATE_DOCUMENT)
+                                                IconButton(
+                                                    onClick = {
+                                                        selectedFileToExport = file
+                                                        createDocumentLauncher.launch(file.name)
+                                                    },
+                                                    modifier = Modifier.size(32.dp)
+                                                ) {
+                                                    Icon(
+                                                        imageVector = Icons.Default.Share,
+                                                        contentDescription = "Export via SAF Intent",
+                                                        tint = neonCyan,
+                                                        modifier = Modifier.size(16.dp)
+                                                    )
+                                                }
+                                                // 2. SEND SHARE (ACTION_SEND)
+                                                IconButton(
+                                                    onClick = {
+                                                        try {
+                                                            val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                                                                type = "text/plain"
+                                                                putExtra(Intent.EXTRA_SUBJECT, file.name)
+                                                                putExtra(Intent.EXTRA_TEXT, file.readText())
+                                                            }
+                                                            context.startActivity(Intent.createChooser(shareIntent, "Share Sandbox Output"))
+                                                            viewModel.addReconciliationLog("[FILE_SYNC] Shared ${file.name} successfully.")
+                                                        } catch (e: Exception) {
+                                                            Toast.makeText(context, "Share failed: ${e.message}", Toast.LENGTH_SHORT).show()
+                                                        }
+                                                    },
+                                                    modifier = Modifier.size(32.dp)
+                                                ) {
+                                                    Icon(
+                                                        imageVector = Icons.AutoMirrored.Filled.Send,
+                                                        contentDescription = "Share text",
+                                                        tint = orangeAccent,
+                                                        modifier = Modifier.size(16.dp)
+                                                    )
+                                                }
+                                                // 3. DELETE
+                                                IconButton(
+                                                    onClick = {
+                                                        viewModel.deleteSandboxFile(file)
+                                                        Toast.makeText(context, "Deleted from sandbox", Toast.LENGTH_SHORT).show()
+                                                    },
+                                                    modifier = Modifier.size(32.dp)
+                                                ) {
+                                                    Icon(
+                                                        imageVector = Icons.Default.Delete,
+                                                        contentDescription = "Delete Local Sandbox Binary",
+                                                        tint = Color.Red.copy(alpha = 0.8f),
+                                                        modifier = Modifier.size(16.dp)
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -4782,6 +5072,396 @@ fun SparklineChart(
                         center = lastPoint
                     )
                 }
+            }
+        }
+    }
+}
+
+@Composable
+fun RechartsRetentionWidget(
+    data: List<Float>,
+    currentVal: Float,
+    tetherBubblesCount: Int,
+    modifier: Modifier = Modifier
+) {
+    val localMuted = Color(0xFF888899)
+    val localBorder = Color(0xFF1C1C24)
+    val neonGreen = Color(0xFF10FA70)
+    val neonCyan = Color(0xFF0AE7FF)
+    val orangeAccent = Color(0xFFFFB000)
+
+    val maxVal = remember(data) { data.maxOrNull() ?: 100f }
+    val minVal = remember(data) { data.minOrNull() ?: 0f }
+
+    var touchX by remember { mutableStateOf<Float?>(null) }
+    var chartWidth by remember { mutableStateOf(1) }
+
+    val activeIndex = remember(touchX, data, chartWidth) {
+        if (touchX != null && data.isNotEmpty() && chartWidth > 0) {
+            val fraction = (touchX!! / chartWidth.toFloat()).coerceIn(0f, 1f)
+            (fraction * (data.size - 1)).roundToInt().coerceIn(0, data.size - 1)
+        } else {
+            data.lastIndex
+        }
+    }
+
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .border(1.dp, localBorder, RoundedCornerShape(12.dp)),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF07070B))
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            // Header Info
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .size(8.dp)
+                                .background(neonGreen, CircleShape)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "STATE-MEMORY RETENTION ANALYZER",
+                            fontFamily = FontFamily.Monospace,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White,
+                            fontSize = 11.sp,
+                            letterSpacing = 1.sp
+                        )
+                    }
+                    Text(
+                        text = "Deterministic decay simulation modeling & Recharts telemetry widget",
+                        fontFamily = FontFamily.Monospace,
+                        color = localMuted,
+                        fontSize = 8.5.sp
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                // Current Score Badge
+                Box(
+                    modifier = Modifier
+                        .background(neonGreen.copy(alpha = 0.1f), RoundedCornerShape(4.dp))
+                        .border(0.5.dp, neonGreen.copy(alpha = 0.5f), RoundedCornerShape(4.dp))
+                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                ) {
+                    Text(
+                        text = "${String.format("%.1f", currentVal)}%",
+                        fontFamily = FontFamily.Monospace,
+                        fontWeight = FontWeight.Bold,
+                        color = neonGreen,
+                        fontSize = 11.sp
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Legends similar to Recharts `<Legend />`
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // Legend item 1
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(6.dp)
+                            .background(neonGreen, CircleShape)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = "Retention Index",
+                        fontFamily = FontFamily.Monospace,
+                        color = Color.LightGray,
+                        fontSize = 9.sp
+                    )
+                }
+                // Legend item 2
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(6.dp)
+                            .background(neonCyan, CircleShape)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = "Coherence",
+                        fontFamily = FontFamily.Monospace,
+                        color = Color.LightGray,
+                        fontSize = 9.sp
+                    )
+                }
+                // Legend item 3
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(6.dp)
+                            .background(orangeAccent, CircleShape)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = "Entropy",
+                        fontFamily = FontFamily.Monospace,
+                        color = Color.LightGray,
+                        fontSize = 9.sp
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Main Interactive Chart Frame
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(130.dp)
+                    .background(Color(0xFF030305), RoundedCornerShape(8.dp))
+                    .border(0.5.dp, localBorder, RoundedCornerShape(8.dp))
+                    .pointerInput(data) {
+                        detectDragGestures(
+                            onDragStart = { offset ->
+                                touchX = offset.x
+                            },
+                            onDrag = { change, _ ->
+                                touchX = change.position.x
+                            },
+                            onDragEnd = {
+                                // Keep the tooltip pointing to the last touched position
+                            }
+                        )
+                    }
+                    .pointerInput(data) {
+                        detectTapGestures(
+                            onPress = { offset ->
+                                touchX = offset.x
+                            }
+                        )
+                    }
+                    .onSizeChanged { size ->
+                        chartWidth = size.width
+                    }
+                    .padding(vertical = 8.dp, horizontal = 12.dp)
+            ) {
+                val density = LocalDensity.current
+
+                Canvas(modifier = Modifier.fillMaxSize()) {
+                    val width = size.width
+                    val height = size.height
+                    val pointCount = data.size
+
+                    // Gridlines (Recharts CartesainGrid)
+                    val gridCount = 4
+                    val gridSpacingY = height / (gridCount + 1)
+                    for (i in 1..gridCount) {
+                        val y = gridSpacingY * i
+                        drawLine(
+                            color = localBorder.copy(alpha = 0.4f),
+                            start = Offset(0f, y),
+                            end = Offset(width, y),
+                            strokeWidth = 1.dp.toPx(),
+                            pathEffect = PathEffect.dashPathEffect(floatArrayOf(5f, 5f), 0f)
+                        )
+                    }
+
+                    // Vertical gridlines
+                    if (pointCount > 1) {
+                        val gridSpacingX = width / 5f
+                        for (i in 1..4) {
+                            val x = gridSpacingX * i
+                            drawLine(
+                                color = localBorder.copy(alpha = 0.3f),
+                                start = Offset(x, 0f),
+                                end = Offset(x, height),
+                                strokeWidth = 1.dp.toPx(),
+                                pathEffect = PathEffect.dashPathEffect(floatArrayOf(4f, 4f), 0f)
+                            )
+                        }
+                    }
+
+                    if (pointCount > 1) {
+                        val dx = width / (pointCount - 1)
+                        val range = (maxVal - minVal).coerceAtLeast(1f)
+
+                        val points = data.mapIndexed { index, valItem ->
+                            val px = index * dx
+                            val py = height - ((valItem - minVal) / range) * (height - 16.dp.toPx()) - 8.dp.toPx()
+                            Offset(px, py)
+                        }
+
+                        // Recharts Area Chart Fill
+                        val areaPath = Path().apply {
+                            moveTo(points[0].x, height)
+                            for (i in 0 until points.size) {
+                                lineTo(points[i].x, points[i].y)
+                            }
+                            lineTo(points.last().x, height)
+                            close()
+                        }
+                        drawPath(
+                            path = areaPath,
+                            brush = Brush.verticalGradient(
+                                colors = listOf(neonGreen.copy(alpha = 0.15f), Color.Transparent),
+                                startY = 0f,
+                                endY = height
+                            )
+                        )
+
+                        // Recharts Line Path
+                        val linePath = Path().apply {
+                            moveTo(points[0].x, points[0].y)
+                            for (i in 1 until points.size) {
+                                lineTo(points[i].x, points[i].y)
+                            }
+                        }
+                        drawPath(
+                            path = linePath,
+                            color = neonGreen,
+                            style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round)
+                        )
+
+                        // If activeIndex is selected, draw the hover indicator vertical cursor line & dots
+                        if (activeIndex in points.indices) {
+                            val activePt = points[activeIndex]
+
+                            // Vertical Cursor line (Recharts `<Tooltip cursor={{ stroke: 'dasharray' }} />`)
+                            drawLine(
+                                color = neonCyan.copy(alpha = 0.6f),
+                                start = Offset(activePt.x, 0f),
+                                end = Offset(activePt.x, height),
+                                strokeWidth = 1.dp.toPx(),
+                                pathEffect = PathEffect.dashPathEffect(floatArrayOf(4f, 4f), 0f)
+                            )
+
+                            // Highlight circle (Recharts active dot)
+                            drawCircle(
+                                color = neonGreen.copy(alpha = 0.3f),
+                                radius = 9.dp.toPx(),
+                                center = activePt
+                            )
+                            drawCircle(
+                                color = neonGreen,
+                                radius = 4.dp.toPx(),
+                                center = activePt
+                            )
+                        }
+                    }
+                }
+
+                // Hover Tooltip Overlay (Recharts `<Tooltip />` styling)
+                if (data.isNotEmpty() && activeIndex in data.indices) {
+                    val activeVal = data[activeIndex]
+                    val pointsCount = data.size
+                    val dx = with(density) { (chartWidth - 24.dp.toPx()) / (pointsCount - 1).coerceAtLeast(1) }
+                    val activeXOffset = activeIndex * dx
+
+                    // Align tooltip left or right of the vertical line to prevent cutting off
+                    val alignLeft = activeXOffset > (chartWidth / 2)
+                    val tooltipOffsetX = if (alignLeft) {
+                        activeXOffset - with(density) { 142.dp.toPx() }
+                    } else {
+                        activeXOffset + with(density) { 16.dp.toPx() }
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .offset { IntOffset(tooltipOffsetX.roundToInt(), with(density) { 10.dp.toPx() }.roundToInt()) }
+                            .width(135.dp)
+                            .shadow(6.dp, RoundedCornerShape(6.dp))
+                            .background(Color(0xEE09090E), RoundedCornerShape(6.dp))
+                            .border(0.5.dp, neonCyan.copy(alpha = 0.4f), RoundedCornerShape(6.dp))
+                            .padding(8.dp)
+                    ) {
+                        Column {
+                            Text(
+                                text = "SAMPLE: T-${(data.size - 1 - activeIndex) * 12}s",
+                                fontFamily = FontFamily.Monospace,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White,
+                                fontSize = 8.sp
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Divider(color = Color(0xFF1C1C24), thickness = 0.5.dp)
+                            Spacer(modifier = Modifier.height(4.dp))
+                            
+                            // Row 1: Retention
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Box(modifier = Modifier.size(5.dp).background(neonGreen, CircleShape))
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text("Retention:", fontFamily = FontFamily.Monospace, color = localMuted, fontSize = 8.sp)
+                                }
+                                Text("${String.format("%.1f", activeVal)}%", fontFamily = FontFamily.Monospace, color = Color.White, fontSize = 8.sp, fontWeight = FontWeight.Bold)
+                            }
+                            
+                            // Row 2: Coherence
+                            val coherenceVal = (activeVal * 1.02f).coerceIn(5f, 100f)
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Box(modifier = Modifier.size(5.dp).background(neonCyan, CircleShape))
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text("Coherence:", fontFamily = FontFamily.Monospace, color = localMuted, fontSize = 8.sp)
+                                }
+                                Text("${String.format("%.1f", coherenceVal)}%", fontFamily = FontFamily.Monospace, color = Color.White, fontSize = 8.sp, fontWeight = FontWeight.Bold)
+                            }
+
+                            // Row 3: Entropy
+                            val entropyVal = 100f - activeVal
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Box(modifier = Modifier.size(5.dp).background(orangeAccent, CircleShape))
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text("Entropy:", fontFamily = FontFamily.Monospace, color = localMuted, fontSize = 8.sp)
+                                }
+                                Text("${String.format("%.1f", entropyVal)}%", fontFamily = FontFamily.Monospace, color = Color.White, fontSize = 8.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // Info row (Instruction)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Info,
+                    contentDescription = "Interactive Hint",
+                    tint = neonCyan,
+                    modifier = Modifier.size(10.dp)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = "Press and slide horizontally over the graph grid to inspect telemetry coordinates.",
+                    style = TextStyle(
+                        fontFamily = FontFamily.Monospace,
+                        color = localMuted,
+                        fontSize = 8.5.sp
+                    )
+                )
             }
         }
     }

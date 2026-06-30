@@ -133,6 +133,10 @@ class SovereignViewModel(application: Application) : AndroidViewModel(applicatio
     private val _sandboxCompletedReport = MutableStateFlow<String?>(null)
     val sandboxCompletedReport: StateFlow<String?> = _sandboxCompletedReport.asStateFlow()
 
+    // --- Local File Sync Service States ---
+    private val _sandboxFilesList = MutableStateFlow<List<java.io.File>>(emptyList())
+    val sandboxFilesList: StateFlow<List<java.io.File>> = _sandboxFilesList.asStateFlow()
+
     // --- Biometric Identity Protocol States ---
     private val _isBiometricScanning = MutableStateFlow(false)
     val isBiometricScanning: StateFlow<Boolean> = _isBiometricScanning.asStateFlow()
@@ -177,6 +181,13 @@ class SovereignViewModel(application: Application) : AndroidViewModel(applicatio
 
     private val _diskLatencyMs = MutableStateFlow(0f)
     val diskLatencyMs: StateFlow<Float> = _diskLatencyMs.asStateFlow()
+
+    // --- State-Memory Retention Levels within the Tether-Bubble System ---
+    private val _stateMemoryRetentionHistory = MutableStateFlow<List<Float>>(listOf(99.1f, 98.4f, 97.6f, 96.9f, 95.8f, 95.2f, 94.7f, 94.1f, 93.4f, 92.8f, 92.1f, 91.5f, 90.9f))
+    val stateMemoryRetentionHistory: StateFlow<List<Float>> = _stateMemoryRetentionHistory.asStateFlow()
+
+    private val _currentRetention = MutableStateFlow(95.0f)
+    val currentRetention: StateFlow<Float> = _currentRetention.asStateFlow()
 
     private val _deviceModel = MutableStateFlow("${android.os.Build.MANUFACTURER} ${android.os.Build.MODEL}")
     val deviceModel: StateFlow<String> = _deviceModel.asStateFlow()
@@ -404,8 +415,31 @@ class SovereignViewModel(application: Application) : AndroidViewModel(applicatio
                 currentThroughputList.add(throughputValue)
                 if (currentThroughputList.size > 20) currentThroughputList.removeAt(0)
                 _throughputHistory.value = currentThroughputList
+
+                // 6. Calculate state-memory retention levels within the Tether-Bubble system dynamically
+                val bubbles = tetherBubbles.value
+                val currentRetentionVal = if (bubbles.isEmpty()) {
+                    100.0f
+                } else {
+                    val now = System.currentTimeMillis()
+                    val totalRetention = bubbles.sumOf { bubble ->
+                        val ageSecs = (now - bubble.createdAt) / 1000f
+                        // Decay over time (halflife around 5 minutes, or 300 seconds, so constant ~ 0.0023f)
+                        val decayConstant = 0.0023f
+                        val retention = 100f * Math.exp(-decayConstant * ageSecs.toDouble())
+                        retention.coerceIn(5.0, 100.0)
+                    }
+                    (totalRetention / bubbles.size).toFloat()
+                }
+                _currentRetention.value = currentRetentionVal
+
+                val currentRetHistory = _stateMemoryRetentionHistory.value.toMutableList()
+                currentRetHistory.add(currentRetentionVal)
+                if (currentRetHistory.size > 20) currentRetHistory.removeAt(0)
+                _stateMemoryRetentionHistory.value = currentRetHistory
             }
         }
+        loadSandboxFiles()
     }
 
     private fun seedInitialData() {
@@ -774,6 +808,7 @@ class SovereignViewModel(application: Application) : AndroidViewModel(applicatio
             }
 
             _sandboxCompletedReport.value = finalReport
+            saveCompiledBlueprintToFile(finalReport)
             logStep("Sandbox compilation completed successfully. Sovereign optimization blueprint active.")
 
             // Log System Milestone
@@ -1331,7 +1366,7 @@ class SovereignViewModel(application: Application) : AndroidViewModel(applicatio
         }
     }
 
-    private fun addReconciliationLog(msg: String) {
+    fun addReconciliationLog(msg: String) {
         val currentLogs = _reconciliationLog.value.toMutableList()
         if (currentLogs.size > 15) {
             currentLogs.removeAt(0)
@@ -1387,6 +1422,60 @@ class SovereignViewModel(application: Application) : AndroidViewModel(applicatio
             
             _currentProcessingFocus.value = "Homeostasis (Coherent and Idle)"
             _isProcessing.value = false
+        }
+    }
+
+    // --- Local File Sync Service Methods ---
+    fun loadSandboxFiles() {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val dir = java.io.File(getApplication<Application>().filesDir, "sandbox_outputs")
+                if (!dir.exists()) {
+                    dir.mkdirs()
+                }
+                val files = dir.listFiles { _, name ->
+                    name.endsWith(".kt") || name.endsWith(".md") || name.endsWith(".json") || name.endsWith(".txt")
+                }
+                _sandboxFilesList.value = files?.sortedByDescending { it.lastModified() } ?: emptyList()
+            } catch (e: Exception) {
+                addReconciliationLog("[FILE_SYNC_ERROR] Failed to list local sandbox files: ${e.message}")
+            }
+        }
+    }
+
+    fun saveCompiledBlueprintToFile(content: String, customName: String? = null) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val dir = java.io.File(getApplication<Application>().filesDir, "sandbox_outputs")
+                if (!dir.exists()) {
+                    dir.mkdirs()
+                }
+                val timeStamp = java.text.SimpleDateFormat("yyyyMMdd_HHmmss", java.util.Locale.getDefault()).format(java.util.Date())
+                val baseName = customName?.trim()?.replace("\\s+".toRegex(), "_") ?: "sandbox_blueprint_$timeStamp"
+                val fileName = if (baseName.endsWith(".kt") || baseName.endsWith(".md") || baseName.endsWith(".txt") || baseName.endsWith(".json")) baseName else "$baseName.kt"
+                val file = java.io.File(dir, fileName)
+                file.writeText(content)
+                
+                addReconciliationLog("[FILE_SYNC] Sandbox output successfully saved locally: ${file.name} (${file.length()} bytes)")
+                loadSandboxFiles()
+            } catch (e: Exception) {
+                addReconciliationLog("[FILE_SYNC_ERROR] Failed to save sandbox blueprint to local file: ${e.message}")
+            }
+        }
+    }
+
+    fun deleteSandboxFile(file: java.io.File) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                if (file.exists() && file.delete()) {
+                    addReconciliationLog("[FILE_SYNC] Deleted local sandbox file: ${file.name}")
+                    loadSandboxFiles()
+                } else {
+                    addReconciliationLog("[FILE_SYNC_ERROR] Failed to delete file or file not found: ${file.name}")
+                }
+            } catch (e: Exception) {
+                addReconciliationLog("[FILE_SYNC_ERROR] Exception deleting file: ${e.message}")
+            }
         }
     }
 }
